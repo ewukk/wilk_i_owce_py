@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gra</title>
+    <style>
+        /* Stylizacja szachownicy */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px); /* Odpowiada szerokości komórki planszy w pikselach */
+            grid-template-rows: repeat(8, 50px); /* Odpowiada wysokości komórki planszy w pikselach */
+        }
+
+        .cell {
+            width: 50px; /* Szerokość komórki planszy w pikselach */
+            height: 50px; /* Wysokość komórki planszy w pikselach */
+            border: 1px solid black;
+            position: relative; /* aby pionki były pozycjonowane wewnątrz komórki */
+        }
+
+        .white {
+            background-color: white;
+        }
+
+        .black {
+            background-color: #d3d3d3; /* Kolor dla czarnych pól */
+        }
+
+        .sheep {
+            position: absolute;
+            width: 40px; /* Szerokość pionka owcy */
+            height: 40px; /* Wysokość pionka owcy */
+            background-color: #a3c8eb;
+            border-radius: 50%;
+            /* Ustaw pozycję pionka w środku komórki */
+            left: 5px; /* Odstęp od lewej krawędzi komórki */
+            top: 5px; /* Odstęp od górnej krawędzi komórki */
+            z-index: 1;
+        }
+
+        .wolf {
+            position: absolute;
+            width: 40px; /* Szerokość pionka wilka */
+            height: 40px; /* Wysokość pionka wilka */
+            background-color: gray;
+            border-radius: 50%;
+            left: 5px; /* Odstęp od lewej krawędzi komórki */
+            top: 5px; /* Odstęp od górnej krawędzi komórki */
+            z-index: 1; /* Ustawienie pionka wilka na pierwszym planie */
+        }
+
+        .piece {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+
+        }
+    </style>
+</head>
+<body>
+    {% set initial_wolf_row = 0 %}
+    {% set initial_wolf_col = 0 %}
+    {% set wolf_position = [initial_wolf_row, initial_wolf_col] %}
+
+    {% block content %}
+    <h1>Grajmy!</h1>
+    <p>Teraz tura: {{ current_turn }}</p>
+
+        {{ wolf }}
+
+    {% for row in BOARD %}
+        <div class="board">
+            {% for cell in row %}
+                <div class="cell {% if cell % 2 == 0 %}white{% else %}black{% endif %}"></div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+    <form id="gameForm" action="/game" method="POST">
+        <input type="hidden" id="moveData" name="move" value="">
+    </form>
+
+    {% endblock content %}
+</body>
+</html>
