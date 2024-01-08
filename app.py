@@ -1,16 +1,12 @@
 import random
-from flask import Flask, render_template, request, session, redirect, json, jsonify
+from flask import Flask, render_template, request, session, redirect
+
+from Figures.Wolf import Wolf
 from Players.ComputerPlayer import ComputerPlayer
-from game import create_player, create_game_instance, Game, is_position_within_board, board
-import json
+from game import create_player, create_game_instance, Game, board
 
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
-app.secret_key = 'secret_key'
-app.config['PERMANENT_SESSION_LIFETIME'] = 600
-app.config['JSON_AS_ASCII'] = False
+app.secret_key = 'wilk_i_owce'
 
 
 def create_game_instance(session):
@@ -64,6 +60,7 @@ def game():
     result = ""
     computer_result = ""
 
+    BOARD = board()
     # Wyświetlenie szachownicy
     for row in board():
         print(' '.join(map(str, row)))
@@ -118,15 +115,38 @@ def game():
     initialSheepPositions = [sheep.get_position() for sheep in sheeps]
 
     return render_template('game.html', sheeps=sheeps, wolf=wolf, result=result,
-                               computer_result=computer_result, sheep_positions=sheep_positions,
-                               initialSheepPositions=initialSheepPositions,
-                               move_history=game_instance.move_history,
-                               is_game_over=is_game_over, current_turn=session.get('current_turn'))
+                           computer_result=computer_result, sheep_positions=sheep_positions,
+                           initialSheepPositions=initialSheepPositions,
+                           move_history=game_instance.move_history,
+                           is_game_over=is_game_over, current_turn=session.get('current_turn'),
+                           BOARD=BOARD, game_instance=game_instance)
 
 
-@app.route('/move', methods=['GET', 'POST'])
+@app.route('/move', methods=['POST'])
 def move():
-    pass
+    # Pobierz pozycję zaznaczonego pionka z formularza
+    selected_row = int(request.form.get('row'))
+    selected_col = int(request.form.get('col'))
+
+    # Sprawdź, czy game_instance nie jest None
+    if game_instance:
+        sheeps = game_instance.sheep
+        wolf = game_instance.wolf
+
+        # Zaznacz pionka jako wybranego
+        for sheep in sheeps:
+            sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
+        wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
+
+        # Określ możliwe ruchy dla zaznaczonego pionka
+        possible_moves = get_possible_moves(selected_row, selected_col)
+
+        return render_template('move.html', possible_moves=possible_moves)
+    else:
+        # Obsługa, gdy game_instance jest None
+        # Możesz zdecydować się na przekierowanie na stronę z błędem lub inny sposób obsługi.
+        return "Błąd: Brak instancji gry."
+
 
 
 @app.route('/handle_computer_move', methods=['POST'])
@@ -168,7 +188,8 @@ def handle_computer_move_logic(wolf_position, sheep_positions, computer_role):
     return new_position
 
 
-def handle_player_move(user_move):
+def handle_player_move():
+    user_move = session.get('current_turn')  # UZUPEŁNIJ
     print("DEBUG: Handling player move")
 
     is_game_over, _ = game_instance.is_game_over()
@@ -182,6 +203,86 @@ def handle_player_move(user_move):
 
     return user_move
 
+
+def get_possible_moves(row, col):
+    possible_moves = []
+    player_role = session.get('player_role')
+    if player_role == 'wilk':
+        # Logika dla ruchu wilka (na ukos)
+        possible_moves = [
+            (row - 1, col - 1), (row - 1, col + 1),
+            (row + 1, col - 1), (row + 1, col + 1)
+        ]
+    elif player_role == 'owca':
+        # Logika dla ruchu owcy (do przodu na ukos)
+        possible_moves = [(row - 1, col - 1), (row - 1, col + 1)]
+
+    # Filtruj możliwe ruchy, aby nie wyjść poza szachownicę
+    possible_moves = [(row, col) for row, col in possible_moves if is_position_within_board((row, col))]
+
+    # Dodaj logikę, aby nie zachodzić na inne pionki
+    possible_moves = [(row, col) for row, col in possible_moves if not is_occupied_by_other_piece((row, col))]
+
+    return possible_moves
+
+
+def is_position_within_board(position):
+    BOARD = [
+        [0, 1, 2, 3, 4, 5, 6, 7],
+        [1, 1, 2, 3, 4, 5, 6, 7],
+        [2, 1, 2, 3, 4, 5, 6, 7],
+        [3, 1, 2, 3, 4, 5, 6, 7],
+        [4, 1, 2, 3, 4, 5, 6, 7],
+        [5, 1, 2, 3, 4, 5, 6, 7],
+        [6, 1, 2, 3, 4, 5, 6, 7],
+        [7, 1, 2, 3, 4, 5, 6, 7]
+    ]
+    row, col = position
+
+    # Sprawdź, czy indeksy wiersza i kolumny są w granicach szachownicy
+    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
+        return True
+    else:
+        return False
+
+
+def is_occupied_by_other_piece(position):
+    row, col = position
+    wolf = game_instance.wolf.get_position()
+    sheeps = game_instance.sheep
+    BOARD = [
+        [0, 1, 2, 3, 4, 5, 6, 7],
+        [1, 1, 2, 3, 4, 5, 6, 7],
+        [2, 1, 2, 3, 4, 5, 6, 7],
+        [3, 1, 2, 3, 4, 5, 6, 7],
+        [4, 1, 2, 3, 4, 5, 6, 7],
+        [5, 1, 2, 3, 4, 5, 6, 7],
+        [6, 1, 2, 3, 4, 5, 6, 7],
+        [7, 1, 2, 3, 4, 5, 6, 7]
+    ]
+    # Sprawdź, czy pozycja mieści się w zakresie planszy
+    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
+        # Sprawdź, czy na danej pozycji znajduje się owca
+        for sheep in sheeps:
+            sheep_row, sheep_col = sheep.get_position()
+            if 0 <= sheep_row < len(BOARD) and 0 <= sheep_col < len(BOARD[0]):
+                if sheep_row == row and sheep_col == col:
+                    return True
+
+        # Sprawdź, czy na danej pozycji znajduje się wilk
+        if isinstance(game_instance.wolf, list):
+            wolf_row, wolf_col = game_instance.wolf
+        elif isinstance(game_instance.wolf, Wolf):
+            wolf_row, wolf_col = game_instance.wolf.get_position()
+
+        # Sprawdź, czy na danej pozycji znajduje się wilk
+        wolf_row, wolf_col = wolf.get_position()
+        if 0 <= wolf_row < len(BOARD) and 0 <= wolf_col < len(BOARD[0]):
+            if wolf_row == row and wolf_col == col:
+                return True
+
+    # Jeśli nie ma owcy ani wilka na danej pozycji, to nie jest zajęte przez inny pionek
+    return False
 
 
 def get_computer_move(wolf_position, sheep_positions):

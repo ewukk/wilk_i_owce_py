@@ -1,3 +1,5 @@
+from flask import session
+
 from Players.Player import Player, SheepPlayer, WolfPlayer
 from Players.ComputerPlayer import ComputerPlayer
 from Figures.Sheep import Sheep
@@ -30,20 +32,7 @@ def board():
         [6, 1, 2, 3, 4, 5, 6, 7],
         [7, 1, 2, 3, 4, 5, 6, 7]
     ]
-
-    for i in range(8):
-        for j in range(8):
-            if i == 0 and j == 3:
-                BOARD[i][j] = 2  # Wilk
-            elif i == 7 and j in [0, 2, 4, 6]:
-                BOARD[i][j] = 1  # Owca
-
     return BOARD
-
-
-def is_position_within_board(position, BOARD_SIZE=8, TILE_SIZE=50):
-    max_coordinate = BOARD_SIZE * TILE_SIZE
-    return 0 <= position[0] < max_coordinate and 0 <= position[1] < max_coordinate
 
 
 class Game:
@@ -57,8 +46,8 @@ class Game:
         self.player_role = None
         self.user_move_completed = False
         self.move_history = {"owca": [], "wilk": []}
-        self.wolf = Wolf(0, 0)
-        self.sheep = [Sheep(2 * i, 7, j) for i in range(1, 8, 2) for j in range(4)]
+        self.wolf = Wolf(0, 3)
+        self.sheep = [Sheep(7, 0, 0), Sheep(7, 2, 1), Sheep(7, 4, 2), Sheep(7, 6, 3)]
 
     def get_wolf(self):
         return self.wolf
@@ -84,18 +73,6 @@ class Game:
     def is_player_turn(self):
         print(f"DEBUG: Checking if it's player's turn. Current player: {self.current_player.get_role()}")
         return self.current_player == self.player
-
-    def get_move_history(self):
-        # Ustaw domyślną rolę, jeśli player_role nie jest ustawiona
-        print(f"Komputer widzi grę jako {self.current_player.get_role()}")
-        player_role = self.current_player.get_player_role() if self.current_player.get_player_role() is not None \
-            else 'owca'
-
-        # Uwzględnij rolę komputera
-        if isinstance(self.current_player, ComputerPlayer):
-            player_role = self.current_player.get_role()
-
-        return self.move_history.get(player_role, [])
 
     def is_game_over(self):
         if self.is_wolf_winner():
