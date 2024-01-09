@@ -15,6 +15,22 @@ def create_game_instance(session):
     computer_player = ComputerPlayer()
     game_instance = Game(player, computer_player, session)
     game_instance.set_player_role(player_role)
+
+
+def create_game_instance(session):
+    player_role = session.get('player_role')
+    player = create_player(player_role)
+    computer_player = ComputerPlayer()
+    game_instance = Game(player, computer_player, session)
+    game_instance.set_player_role(player_role)
+
+    session['game_data'] = {
+        'wolf_position': game_instance.get_wolf().get_position(),
+        'sheep_positions': [sheep.get_position() for sheep in game_instance.get_sheep()],
+        'player_role': player_role,
+        'computer_role': session.get('computer_role')
+    }
+
     return game_instance
 
 
@@ -32,6 +48,16 @@ data = {
     "pieces": generate_initial_positions()
 }
 
+BOARD = [
+    [0, 1, 2, 3, 4, 5, 6, 7],
+    [1, 1, 2, 3, 4, 5, 6, 7],
+    [2, 1, 2, 3, 4, 5, 6, 7],
+    [3, 1, 2, 3, 4, 5, 6, 7],
+    [4, 1, 2, 3, 4, 5, 6, 7],
+    [5, 1, 2, 3, 4, 5, 6, 7],
+    [6, 1, 2, 3, 4, 5, 6, 7],
+    [7, 1, 2, 3, 4, 5, 6, 7]
+]
 
 @app.before_request
 def make_session_permanent():
@@ -56,11 +82,9 @@ def choose_figure():
 
 @app.route('/game', methods=['GET', 'POST'])
 def game():
-    global game_instance
     result = ""
     computer_result = ""
 
-    BOARD = board()
     # Wyświetlenie szachownicy
     for row in board():
         print(' '.join(map(str, row)))
@@ -75,7 +99,18 @@ def game():
 
     # Utwórz nową instancję gry dla sesji gracza
     game_instance = create_game_instance(session=session)
+    session['game_instance'] = game_instance
     session['current_turn'] = 'player'
+
+    if 'game_instance' in session:
+        del session['game_instance']
+
+    session['game_data'] = {
+        'wolf_position': game_instance.get_wolf().get_position(),
+        'sheep_positions': [sheep.get_position() for sheep in game_instance.get_sheep()],
+        'player_role': session['player_role'],
+        'computer_role': session['computer_role']
+    }
 
     # Sprawdź role użytkowników
     player_role = session.get('player_role')
@@ -124,89 +159,105 @@ def game():
 
 @app.route('/move', methods=['POST'])
 def move():
+    # Wyświetlenie szachownicy
+    for row in board():
+        print(' '.join(map(str, row)))
+
     # Pobierz pozycję zaznaczonego pionka z formularza
     selected_row = int(request.form.get('row'))
     selected_col = int(request.form.get('col'))
 
-    # Sprawdź, czy game_instance nie jest None
-    if game_instance:
-        sheeps = game_instance.sheep
-        wolf = game_instance.wolf
+    wolf_position = session['game_data']['wolf_position']
+    sheep_positions = session['game_data']['sheep_positions']
 
-        # Zaznacz pionka jako wybranego
-        for sheep in sheeps:
-            sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
-        wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
+    # Utwórz nową instancję gry dla sesji gracza
+    game_instance = create_game_instance(session=session)
 
-        # Określ możliwe ruchy dla zaznaczonego pionka
-        possible_moves = get_possible_moves(selected_row, selected_col)
+    # Przechowuj aktualne dane o grze w sesji
+    session['game_data'] = {
+        'wolf_position': game_instance.get_wolf().get_position(),
+        'sheep_positions': [sheep.get_position() for sheep in game_instance.get_sheep()],
+        'player_role': session['player_role'],
+        'computer_role': session['computer_role']
+    }
 
-        return render_template('move.html', possible_moves=possible_moves)
-    else:
-        # Obsługa, gdy game_instance jest None
-        # Możesz zdecydować się na przekierowanie na stronę z błędem lub inny sposób obsługi.
-        return "Błąd: Brak instancji gry."
+    sheeps = game_instance.sheep
+    wolf = game_instance.wolf
 
+    # Zaznacz pionka jako wybranego
+    for sheep in sheeps:
+        sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
+    wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
+
+    # Określ możliwe ruchy dla zaznaczonego pionka
+    possible_moves = get_possible_moves(selected_row, selected_col)
+
+    return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
 
 
 @app.route('/handle_computer_move', methods=['POST'])
 def handle_computer_move():
-    # Pobierz pozycję wilka i owiec oraz rolę komputera
-    wolf_position = game_instance.get_wolf().get_position()
-    sheeps = game_instance.get_sheep()
-    sheep_positions = [sheep.get_position() for sheep in sheeps]
-    computer_role = session.get('computer_role')
-    print('=====')
-    # Przekaż te informacje do funkcji obsługującej ruch komputera
-    new_position = handle_computer_move_logic(wolf_position, sheep_positions, computer_role)
-    print('===========')
+    session.modified = True
+    if 'game_instance' in session:
+        game_instance = session['game_instance']
+        # Pobierz pozycję wilka i owiec oraz rolę komputera
+        wolf_position = game_instance.get_wolf().get_position()
+        sheeps = game_instance.get_sheep()
+        sheep_positions = [sheep.get_position() for sheep in sheeps]
+        computer_role = session.get('computer_role')
+        print('=====')
 
-    return new_position
+        # Przekaż te informacje do funkcji obsługującej ruch komputera
+        new_position = get_computer_move(wolf_position, sheep_positions)
 
+        print('33333')
+        # Zaktualizuj current_position na nową pozycję
+        if computer_role == "wilk":
+            game_instance.wolf.set_position(*new_position)
+            print('666')
+            print('*****', game_instance.wolf)
+        else:
+            print('----')
+            chosen_sheep = sheeps[new_position.get('sheepIndex')]
+            chosen_sheep.set_position(*new_position)
 
-def handle_computer_move_logic(wolf_position, sheep_positions, computer_role):
-    sheeps = game_instance.get_sheep()
-    print('111111')
-    # Przekaż wszystkie potrzebne informacje
-    new_position = get_computer_move(wolf_position, sheep_positions)
+        print('22222')
 
-    print('33333')
-    # Zaktualizuj current_position na nową pozycję
-    if computer_role == "wilk":
-        game_instance.wolf.set_position(*new_position)
-        print('666')
-        print('*****', game_instance.wolf)
+        session['current_turn'] = 'player'
+        session.modified = True
+        print('===========')
+
+        return new_position
     else:
-        print('----')
-        chosen_sheep = sheeps[new_position.get('sheepIndex')]
-        chosen_sheep.set_position(*new_position)
-
-    print('22222')
-
-    session['current_turn'] = 'player'
-
-    return new_position
+        # Obsługa, gdy game_instance nie istnieje w sesji
+        return "Błąd: Brak instancji gry w sesji."
 
 
 def handle_player_move():
-    user_move = session.get('current_turn')  # UZUPEŁNIJ
-    print("DEBUG: Handling player move")
+    if 'game_instance' in session:
+        game_instance = session['game_instance']
+        user_move = session.get('current_turn')  # UZUPEŁNIJ
+        print("DEBUG: Handling player move")
 
-    is_game_over, _ = game_instance.is_game_over()
+        is_game_over, _ = game_instance.is_game_over()
 
-    if not is_game_over:
-        game_instance.switch_player()
-        print(f"DEBUG: Current turn after player move: {game_instance.current_player.get_role()}")
+        if not is_game_over:
+            game_instance.switch_player()
+            print(f"DEBUG: Current turn after player move: {game_instance.current_player.get_role()}")
 
+        else:
+            print("Invalid move. Piece out of bounds.")
+
+        return user_move
     else:
-        print("Invalid move. Piece out of bounds.")
-
-    return user_move
+        # Obsługa, gdy game_instance nie istnieje w sesji
+        return "Błąd: Brak instancji gry w sesji."
 
 
 def get_possible_moves(row, col):
     possible_moves = []
     player_role = session.get('player_role')
+
     if player_role == 'wilk':
         # Logika dla ruchu wilka (na ukos)
         possible_moves = [
@@ -227,16 +278,6 @@ def get_possible_moves(row, col):
 
 
 def is_position_within_board(position):
-    BOARD = [
-        [0, 1, 2, 3, 4, 5, 6, 7],
-        [1, 1, 2, 3, 4, 5, 6, 7],
-        [2, 1, 2, 3, 4, 5, 6, 7],
-        [3, 1, 2, 3, 4, 5, 6, 7],
-        [4, 1, 2, 3, 4, 5, 6, 7],
-        [5, 1, 2, 3, 4, 5, 6, 7],
-        [6, 1, 2, 3, 4, 5, 6, 7],
-        [7, 1, 2, 3, 4, 5, 6, 7]
-    ]
     row, col = position
 
     # Sprawdź, czy indeksy wiersza i kolumny są w granicach szachownicy
@@ -248,90 +289,92 @@ def is_position_within_board(position):
 
 def is_occupied_by_other_piece(position):
     row, col = position
-    wolf = game_instance.wolf.get_position()
-    sheeps = game_instance.sheep
-    BOARD = [
-        [0, 1, 2, 3, 4, 5, 6, 7],
-        [1, 1, 2, 3, 4, 5, 6, 7],
-        [2, 1, 2, 3, 4, 5, 6, 7],
-        [3, 1, 2, 3, 4, 5, 6, 7],
-        [4, 1, 2, 3, 4, 5, 6, 7],
-        [5, 1, 2, 3, 4, 5, 6, 7],
-        [6, 1, 2, 3, 4, 5, 6, 7],
-        [7, 1, 2, 3, 4, 5, 6, 7]
-    ]
-    # Sprawdź, czy pozycja mieści się w zakresie planszy
-    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
-        # Sprawdź, czy na danej pozycji znajduje się owca
-        for sheep in sheeps:
-            sheep_row, sheep_col = sheep.get_position()
-            if 0 <= sheep_row < len(BOARD) and 0 <= sheep_col < len(BOARD[0]):
-                if sheep_row == row and sheep_col == col:
+    if 'game_instance' in session:
+        game_instance = session['game_instance']
+        wolf = game_instance.wolf.get_position()
+        sheeps = [sheep.get_position() for sheep in game_instance.sheep]
+
+        # Sprawdź, czy pozycja mieści się w zakresie planszy
+        if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
+            # Sprawdź, czy na danej pozycji znajduje się owca
+            for sheep in sheeps:
+                sheep_row, sheep_col = sheep.get_position()
+                if 0 <= sheep_row < len(BOARD) and 0 <= sheep_col < len(BOARD[0]):
+                    if sheep_row == row and sheep_col == col:
+                        return True
+
+            # Sprawdź, czy na danej pozycji znajduje się wilk
+            if isinstance(game_instance.wolf, list):
+                wolf_row, wolf_col = game_instance.wolf
+            elif isinstance(game_instance.wolf, Wolf):
+                wolf_row, wolf_col = game_instance.wolf.get_position()
+
+            # Sprawdź, czy na danej pozycji znajduje się wilk
+            wolf_row, wolf_col = wolf.get_position()
+            if 0 <= wolf_row < len(BOARD) and 0 <= wolf_col < len(BOARD[0]):
+                if wolf_row == row and wolf_col == col:
                     return True
 
-        # Sprawdź, czy na danej pozycji znajduje się wilk
-        if isinstance(game_instance.wolf, list):
-            wolf_row, wolf_col = game_instance.wolf
-        elif isinstance(game_instance.wolf, Wolf):
-            wolf_row, wolf_col = game_instance.wolf.get_position()
-
-        # Sprawdź, czy na danej pozycji znajduje się wilk
-        wolf_row, wolf_col = wolf.get_position()
-        if 0 <= wolf_row < len(BOARD) and 0 <= wolf_col < len(BOARD[0]):
-            if wolf_row == row and wolf_col == col:
-                return True
-
-    # Jeśli nie ma owcy ani wilka na danej pozycji, to nie jest zajęte przez inny pionek
-    return False
+        # Jeśli nie ma owcy ani wilka na danej pozycji, to nie jest zajęte przez inny pionek
+        return False
+    else:
+        # Obsługa, gdy game_instance nie istnieje w sesji
+        return "Błąd: Brak instancji gry w sesji."
 
 
 def get_computer_move(wolf_position, sheep_positions):
     global move_mapping
-    print("DEBUG: Pobierz Ruch Komputera - Start")
 
-    computer_role = session.get('computer_role')
+    if 'game_instance' in session:
+        game_instance = session['game_instance']
+        print("DEBUG: Pobierz Ruch Komputera - Start")
 
-    # Sprawdź rolę komputera
-    if computer_role == "wilk":
-        move_mapping = {
-            "DIAGONAL_UP_LEFT": "DIAGONAL_UP_LEFT",
-            "DIAGONAL_UP_RIGHT": "DIAGONAL_UP_RIGHT",
-            "DIAGONAL_DOWN_LEFT": "DIAGONAL_DOWN_LEFT",
-            "DIAGONAL_DOWN_RIGHT": "DIAGONAL_DOWN_RIGHT",
-        }
-        current_position = game_instance.get_wolf().get_position()
-        # Wybierz jeden ruch
-        chosen_move = random.choice(list(move_mapping.values()))
-        new_position = calculate_new_position(current_position, chosen_move, computer_role)
+        computer_role = session.get('computer_role')
 
-        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
-        print(f"DEBUG: Nowa pozycja pionka: {new_position}")
-        print("DEBUG: Pobierz Ruch Komputera - Koniec")
+        # Sprawdź rolę komputera
+        if computer_role == "wilk":
+            move_mapping = {
+                "DIAGONAL_UP_LEFT": "DIAGONAL_UP_LEFT",
+                "DIAGONAL_UP_RIGHT": "DIAGONAL_UP_RIGHT",
+                "DIAGONAL_DOWN_LEFT": "DIAGONAL_DOWN_LEFT",
+                "DIAGONAL_DOWN_RIGHT": "DIAGONAL_DOWN_RIGHT",
+            }
+            current_position = game_instance.get_wolf().get_position()
+            # Wybierz jeden ruch
+            chosen_move = random.choice(list(move_mapping.values()))
+            new_position = calculate_new_position(current_position, chosen_move, computer_role)
 
-        return new_position
+            print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
+            print(f"DEBUG: Nowa pozycja pionka: {new_position}")
+            print("DEBUG: Pobierz Ruch Komputera - Koniec")
 
-    elif computer_role == "owca":
-        move_mapping = {
-            "DIAGONAL_UP_LEFT": "DIAGONAL_UP_LEFT",
-            "DIAGONAL_UP_RIGHT": "DIAGONAL_UP_RIGHT",
-        }
-        # Wybierz losową owcę
-        chosen_sheep = random.choice(game_instance.get_sheep())
-        sheepIndex = chosen_sheep.get_index()
-        current_position = chosen_sheep.get_position()
-        print(f"DEBUG: Wybrana owca: {sheepIndex}")
+            return new_position
 
-        # Wybierz jeden ruch
-        chosen_move = random.choice(list(move_mapping.values()))
-        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
+        elif computer_role == "owca":
+            move_mapping = {
+                "DIAGONAL_UP_LEFT": "DIAGONAL_UP_LEFT",
+                "DIAGONAL_UP_RIGHT": "DIAGONAL_UP_RIGHT",
+            }
+            # Wybierz losową owcę
+            chosen_sheep = random.choice(game_instance.get_sheep())
+            sheepIndex = chosen_sheep.get_index()
+            current_position = chosen_sheep.get_position()
+            print(f"DEBUG: Wybrana owca: {sheepIndex}")
 
-        # Oblicz ruch na podstawie pozycji wybranej owcy
-        new_position = calculate_new_position(current_position, chosen_move, computer_role)
-        print(f"DEBUG: Nowa pozycja pionka: {new_position}")
+            # Wybierz jeden ruch
+            chosen_move = random.choice(list(move_mapping.values()))
+            print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
 
-        print("DEBUG: Pobierz Ruch Komputera - Koniec")
+            # Oblicz ruch na podstawie pozycji wybranej owcy
+            new_position = calculate_new_position(current_position, chosen_move, computer_role)
+            print(f"DEBUG: Nowa pozycja pionka: {new_position}")
 
-        return new_position
+            print("DEBUG: Pobierz Ruch Komputera - Koniec")
+
+            return new_position
+        else:
+            # Obsługa, gdy game_instance nie istnieje w sesji
+            return "Błąd: Brak instancji gry w sesji."
 
 
 def calculate_new_position(current_position, move, role):

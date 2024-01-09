@@ -39,7 +39,7 @@
             position: absolute;
             width: 40px; /* Szerokość pionka owcy */
             height: 40px; /* Wysokość pionka owcy */
-            background-color: #61788d;
+            background-color: #a3c8eb;
             border-radius: 50%;
             /* Ustaw pozycję pionka w środku komórki */
             left: 5px; /* Odstęp od lewej krawędzi komórki */
@@ -67,6 +67,15 @@
             border-radius: 50%;
 
         }
+
+        .selected-piece {
+            background-color: #61788d !important;
+        }
+
+        .piece[data-selected="true"] {
+            background-color: #61788d !important;
+        }
+
     </style>
 </head>
 <body>
@@ -79,12 +88,12 @@
                 <div class="cell {% if (row + col) % 2 == 0 %}white{% else %}black{% endif %}">
                     {% for sheep in sheeps %}
                         {% if sheep.row == row and sheep.col == col %}
-                            <div class="piece sheep" onclick="selectPiece({{ row }}, {{ col }})"></div>
+                            <div class="piece sheep"></div>
                         {% endif %}
                     {% endfor %}
 
                     {% if wolf.row == row and wolf.col == col %}
-                        <div class="piece wolf" onclick="selectPiece({{ row }}, {{ col }})"></div>
+                        <div class="piece wolf"></div>
                     {% endif %}
                 </div>
             {% endfor %}
