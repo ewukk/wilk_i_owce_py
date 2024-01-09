@@ -1,9 +1,9 @@
 import random
 from flask import Flask, render_template, request, session, redirect
-
 from Figures.Wolf import Wolf
 from Players.ComputerPlayer import ComputerPlayer
-from game import create_player, create_game_instance, Game, board
+from game import create_player, Game, board
+import pickle
 
 app = Flask(__name__)
 app.secret_key = 'wilk_i_owce'
@@ -15,21 +15,8 @@ def create_game_instance(session):
     computer_player = ComputerPlayer()
     game_instance = Game(player, computer_player, session)
     game_instance.set_player_role(player_role)
+    session['game_instance'] = game_instance
 
-
-def create_game_instance(session):
-    player_role = session.get('player_role')
-    player = create_player(player_role)
-    computer_player = ComputerPlayer()
-    game_instance = Game(player, computer_player, session)
-    game_instance.set_player_role(player_role)
-
-    session['game_data'] = {
-        'wolf_position': game_instance.get_wolf().get_position(),
-        'sheep_positions': [sheep.get_position() for sheep in game_instance.get_sheep()],
-        'player_role': player_role,
-        'computer_role': session.get('computer_role')
-    }
 
     return game_instance
 
@@ -58,11 +45,9 @@ BOARD = [
     [6, 1, 2, 3, 4, 5, 6, 7],
     [7, 1, 2, 3, 4, 5, 6, 7]
 ]
-
 @app.before_request
 def make_session_permanent():
     session.permanent = True
-
 
 @app.route('/')
 def hello():
@@ -99,18 +84,7 @@ def game():
 
     # Utwórz nową instancję gry dla sesji gracza
     game_instance = create_game_instance(session=session)
-    session['game_instance'] = game_instance
     session['current_turn'] = 'player'
-
-    if 'game_instance' in session:
-        del session['game_instance']
-
-    session['game_data'] = {
-        'wolf_position': game_instance.get_wolf().get_position(),
-        'sheep_positions': [sheep.get_position() for sheep in game_instance.get_sheep()],
-        'player_role': session['player_role'],
-        'computer_role': session['computer_role']
-    }
 
     # Sprawdź role użytkowników
     player_role = session.get('player_role')
@@ -154,11 +128,13 @@ def game():
                            initialSheepPositions=initialSheepPositions,
                            move_history=game_instance.move_history,
                            is_game_over=is_game_over, current_turn=session.get('current_turn'),
-                           BOARD=BOARD, game_instance=game_instance)
+                           BOARD=BOARD, game_instance=session.get('game_instance'))
 
 
 @app.route('/move', methods=['POST'])
 def move():
+    print(f"DEBUG: Session contents before /move: {session}")
+    game_instance = pickle.loads(session['game_instance'])
     # Wyświetlenie szachownicy
     for row in board():
         print(' '.join(map(str, row)))
@@ -169,17 +145,6 @@ def move():
 
     wolf_position = session['game_data']['wolf_position']
     sheep_positions = session['game_data']['sheep_positions']
-
-    # Utwórz nową instancję gry dla sesji gracza
-    game_instance = create_game_instance(session=session)
-
-    # Przechowuj aktualne dane o grze w sesji
-    session['game_data'] = {
-        'wolf_position': game_instance.get_wolf().get_position(),
-        'sheep_positions': [sheep.get_position() for sheep in game_instance.get_sheep()],
-        'player_role': session['player_role'],
-        'computer_role': session['computer_role']
-    }
 
     sheeps = game_instance.sheep
     wolf = game_instance.wolf
@@ -199,7 +164,7 @@ def move():
 def handle_computer_move():
     session.modified = True
     if 'game_instance' in session:
-        game_instance = session['game_instance']
+        game_instance = session.get('game_instance')
         # Pobierz pozycję wilka i owiec oraz rolę komputera
         wolf_position = game_instance.get_wolf().get_position()
         sheeps = game_instance.get_sheep()
@@ -235,8 +200,8 @@ def handle_computer_move():
 
 def handle_player_move():
     if 'game_instance' in session:
-        game_instance = session['game_instance']
-        user_move = session.get('current_turn')  # UZUPEŁNIJ
+        game_instance = session.get('game_instance')
+        user_move = redirect('/move')
         print("DEBUG: Handling player move")
 
         is_game_over, _ = game_instance.is_game_over()
@@ -248,6 +213,7 @@ def handle_player_move():
         else:
             print("Invalid move. Piece out of bounds.")
 
+        session.modified = True
         return user_move
     else:
         # Obsługa, gdy game_instance nie istnieje w sesji
@@ -290,7 +256,7 @@ def is_position_within_board(position):
 def is_occupied_by_other_piece(position):
     row, col = position
     if 'game_instance' in session:
-        game_instance = session['game_instance']
+        game_instance = session.get('game_instance')
         wolf = game_instance.wolf.get_position()
         sheeps = [sheep.get_position() for sheep in game_instance.sheep]
 
@@ -326,7 +292,7 @@ def get_computer_move(wolf_position, sheep_positions):
     global move_mapping
 
     if 'game_instance' in session:
-        game_instance = session['game_instance']
+        game_instance = session.get('game_instance')
         print("DEBUG: Pobierz Ruch Komputera - Start")
 
         computer_role = session.get('computer_role')

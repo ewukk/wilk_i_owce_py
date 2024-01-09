@@ -6,12 +6,6 @@ from Figures.Sheep import Sheep
 from Figures.Wolf import Wolf
 
 
-def create_game_instance(session):
-    player = Player()
-    computer_player = ComputerPlayer()
-    return Game(player, computer_player, session)
-
-
 def create_player(role):
     if role is None or role == 'owca':
         return SheepPlayer()

@@ -7,10 +7,27 @@
     <style>
         :root {
             --selected-piece-color: #ffcc00; /* Kolor dla zaznaczonego pionka */
+            --possible-move-color: #ff0000; /* Kolor dla możliwego ruchu */
         }
 
         .selected-piece {
             background-color: var(--selected-piece-color) !important;
+        }
+
+        .user-selected-piece {
+            background-color: #ffcc00; /* Nowy kolor dla zaznaczonego pionka w /move */
+        }
+
+        .possible-move {
+            background-color: var(--possible-move-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            left: 50%; /* Centrowanie w komórce */
+            top: 50%; /* Centrowanie w komórce */
+            transform: translate(-50%, -50%);
+            z-index: 2;
         }
 
         /* Stylizacja szachownicy */
@@ -68,17 +85,16 @@
 
         }
 
-        .selected-piece {
-            background-color: #61788d !important;
-        }
-
-        .piece[data-selected="true"] {
-            background-color: #61788d !important;
-        }
-
     </style>
 </head>
 <body>
+    <form id="pieceForm" action="/move" method="POST">
+        <input type="hidden" id="selectedRow" name="row" value="">
+        <input type="hidden" id="selectedCol" name="col" value="">
+        <input type="hidden" id="selectedPieceRow" name="selectedPieceRow" value="">
+        <input type="hidden" id="selectedPieceCol" name="selectedPieceCol" value="">
+    </form>
+
     {% block content %}
     <h1>Wykonaj ruch!</h1>
 
@@ -86,19 +102,36 @@
         {% for row in range(8) %}
             {% for col in range(8) %}
                 <div class="cell {% if (row + col) % 2 == 0 %}white{% else %}black{% endif %}">
+
                     {% for sheep in sheeps %}
                         {% if sheep.row == row and sheep.col == col %}
-                            <div class="piece sheep"></div>
+                            <div class="piece sheep {% if sheep.isSelected %}user-selected-piece{% endif %}"></div>
                         {% endif %}
                     {% endfor %}
 
                     {% if wolf.row == row and wolf.col == col %}
-                        <div class="piece wolf"></div>
+                        <div class="piece wolf {% if wolf.isSelected %}user-selected-piece{% endif %}"></div>
                     {% endif %}
+
+
+                    {% if (row, col) in possible_moves %}
+                        <div class="possible-move"></div>
+                    {% endif %}
+
                 </div>
             {% endfor %}
         {% endfor %}
     </div>
     {% endblock content %}
 </body>
+<script>
+    // Pobierz informacje o zaznaczonym pionku z sessionStorage
+    const selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
+    const selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
+
+    // Ustaw wartości dla ukrytych pól formularza
+    document.getElementById('selectedPieceRow').value = selectedPieceRow;
+    document.getElementById('selectedPieceCol').value = selectedPieceCol;
+</script>
+
 </html>
