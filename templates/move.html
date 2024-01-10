@@ -5,21 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruch</title>
     <style>
-        :root {
-            --selected-piece-color: #ffcc00; /* Kolor dla zaznaczonego pionka */
-            --possible-move-color: #ff0000; /* Kolor dla możliwego ruchu */
-        }
 
         .selected-piece {
-            background-color: var(--selected-piece-color) !important;
+            background-color: #61788d !important;
         }
 
         .user-selected-piece {
-            background-color: #ffcc00; /* Nowy kolor dla zaznaczonego pionka w /move */
+            background-color: #61788d; /* Nowy kolor dla zaznaczonego pionka w /move */
         }
 
         .possible-move {
-            background-color: var(--possible-move-color);
+            background-color: #eba3c8;
             border-radius: 50%;
             width: 20px;
             height: 20px;
@@ -28,6 +24,7 @@
             top: 50%; /* Centrowanie w komórce */
             transform: translate(-50%, -50%);
             z-index: 2;
+            cursor: pointer;
         }
 
         /* Stylizacja szachownicy */
@@ -62,7 +59,6 @@
             left: 5px; /* Odstęp od lewej krawędzi komórki */
             top: 5px; /* Odstęp od górnej krawędzi komórki */
             z-index: 1;
-            cursor: pointer;
         }
 
         .wolf {
@@ -74,7 +70,6 @@
             left: 5px; /* Odstęp od lewej krawędzi komórki */
             top: 5px; /* Odstęp od górnej krawędzi komórki */
             z-index: 1; /* Ustawienie pionka wilka na pierwszym planie */
-            cursor: pointer;
         }
 
         .piece {
@@ -82,11 +77,21 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-
         }
 
     </style>
+
+    <script src="{{ url_for('static', filename='script.js') }}">
+        // Pobierz informacje o zaznaczonym pionku z sessionStorage
+        const selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
+        const selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
+
+        // Ustaw wartości dla ukrytych pól formularza
+        document.getElementById('selectedPieceRow').value = selectedPieceRow;
+        document.getElementById('selectedPieceCol').value = selectedPieceCol;
+    </script>
 </head>
+
 <body>
     <form id="pieceForm" action="/move" method="POST">
         <input type="hidden" id="selectedRow" name="row" value="">
@@ -115,23 +120,19 @@
 
 
                     {% if (row, col) in possible_moves %}
-                        <div class="possible-move"></div>
+                        <div class="possible-move" onclick="submitMove({{ row }}, {{ col }})"></div>
                     {% endif %}
 
                 </div>
             {% endfor %}
         {% endfor %}
     </div>
+
+    <form id="moveForm" action="/move" method="POST">
+        <input type="hidden" id="selectedRow" name="row" value="">
+        <input type="hidden" id="selectedCol" name="col" value="">
+    </form>
+
     {% endblock content %}
 </body>
-<script>
-    // Pobierz informacje o zaznaczonym pionku z sessionStorage
-    const selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
-    const selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
-
-    // Ustaw wartości dla ukrytych pól formularza
-    document.getElementById('selectedPieceRow').value = selectedPieceRow;
-    document.getElementById('selectedPieceCol').value = selectedPieceCol;
-</script>
-
 </html>

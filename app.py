@@ -1,5 +1,5 @@
 import random
-from flask import Flask, render_template, request, session, redirect
+from flask import Flask, render_template, request, session, redirect, url_for
 from Figures.Wolf import Wolf
 from Players.ComputerPlayer import ComputerPlayer
 from game import create_player, Game, board
@@ -101,22 +101,6 @@ def game():
                 print("DEBUG: Tura gracza")
                 handle_player_move()
 
-                # Po ruchu gracza sprawdź, czy gra się zakończyła
-                is_game_over, game_result = game_instance.is_game_over()
-
-                if not is_game_over:
-                    # Jeśli gra się nie zakończyła, to przełącz na turę komputera
-                    session['current_turn'] = 'computer'
-                    if 'computer_role' not in session:
-                        session['computer_role'] = "owca" if player_role == "wilk" else "wilk"
-                    wolf_position = game_instance.get_wolf()
-                    sheeps = game_instance.get_sheep()
-                    sheep_positions = [sheep.get_position() for sheep in sheeps]
-
-                    # Pobierz ruch komputera
-                    print('/////')
-                    handle_computer_move()
-
     sheeps = game_instance.sheep
     wolf = game_instance.wolf
     print('=========', game_instance.wolf)
@@ -143,9 +127,7 @@ def move():
     selected_row = int(request.form.get('row'))
     selected_col = int(request.form.get('col'))
 
-    wolf_position = session['game_data']['wolf_position']
-    sheep_positions = session['game_data']['sheep_positions']
-
+    game_instance = session['game_instance']
     sheeps = game_instance.sheep
     wolf = game_instance.wolf
 
@@ -156,6 +138,18 @@ def move():
 
     # Określ możliwe ruchy dla zaznaczonego pionka
     possible_moves = get_possible_moves(selected_row, selected_col)
+
+    if request.method == 'POST':
+
+        # Po ruchu gracza sprawdź, czy gra się zakończyła
+        is_game_over, game_result = game_instance.is_game_over()
+
+        if not is_game_over:
+            # Jeśli gra się nie zakończyła, to przełącz na turę komputera
+            session['current_turn'] = 'computer'
+            handle_computer_move()
+
+        return redirect(url_for('game'))
 
     return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
 
