@@ -1,9 +1,10 @@
-window.selectPiece = function(row, col) {
+
+window.selectPiece = function(row, col, playerRole) {
     // Sprawdź aktualną rolę gracza
-    var currentPlayerRole = "{{ current_turn == 'player' ? player_role : computer_role }}";
+    var currentPlayerRole = currentTurn === 'player' ? playerRole : computerRole;
 
     // Sprawdź, czy kliknięty pionek odpowiada roli gracza
-    var selectedPiece = document.querySelector(`.piece[row="${row}"][col="${col}"]`);
+    var selectedPiece = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
     if (selectedPiece && selectedPiece.getAttribute("data-role") === currentPlayerRole) {
         // Usuń zaznaczenie dla wszystkich pionków
         document.querySelectorAll('.piece').forEach(piece => {
@@ -29,6 +30,7 @@ window.selectPiece = function(row, col) {
         console.log('Nie możesz zaznaczyć tego pionka.');
     }
 }
+
 
 // Funkcja do obsługi kliknięcia w możliwe pole ruchu
 function submitMove(row, col) {

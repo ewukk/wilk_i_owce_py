@@ -60,7 +60,14 @@
 
         }
     </style>
+
+<script>
+    var currentTurn = "{{ current_turn }}";
+    var playerRole = "{{ player_role }}";
+    var computerRole = "{{ computer_role }}";
+</script>
 <script src="/static/game.js"></script>
+
 </head>
 <body>
     {% block content %}
@@ -68,6 +75,7 @@
     <p>Teraz tura: {{ current_turn }}</p>
 
         {{ wolf }}
+        <p>player_role: {{ player_role }}</p>
 
     <div class="board">
         {% for row in range(8) %}
@@ -75,12 +83,12 @@
                 <div class="cell {% if (row + col) % 2 == 0 %}white{% else %}black{% endif %}">
                     {% for sheep in sheeps %}
                         {% if sheep.row == row and sheep.col == col %}
-                            <div class="piece sheep {% if sheep.isSelected %}selected-piece{% endif %}" data-role="owca" data-selected="{{ sheep.isSelected }}" onclick="selectPiece({{ row }}, {{ col }})"></div>
+                            <div class="piece sheep {% if sheep.isSelected %}selected-piece{% endif %}" data-role="owca" data-selected="{{ sheep.isSelected }}" data-row="{{ row }}" data-col="{{ col }}" onclick="selectPiece({{ row }}, {{ col }}, '{{ player_role }}')"></div>
                         {% endif %}
                     {% endfor %}
 
                     {% if wolf.row == row and wolf.col == col %}
-                        <div class="piece wolf {% if wolf.isSelected %}selected-piece{% endif %}" data-role="wilk" data-selected="{{ wolf.isSelected }}" onclick="selectPiece({{ row }}, {{ col }})"></div>
+                        <div class="piece wolf {% if wolf.isSelected %}selected-piece{% endif %}" data-role="wilk" data-selected="{{ wolf.isSelected }}" data-row="{{ row }}" data-col="{{ col }}" onclick="selectPiece({{ row }}, {{ col }}, '{{ player_role }}')"></div>
                     {% endif %}
                 </div>
             {% endfor %}
