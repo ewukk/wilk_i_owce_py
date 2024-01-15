@@ -3,22 +3,23 @@ from flask import Flask, render_template, request, session, redirect, url_for
 from Figures.Wolf import Wolf
 from Players.ComputerPlayer import ComputerPlayer
 from game import create_player, Game, board
-import pickle
 
 app = Flask(__name__)
 app.secret_key = 'wilk_i_owce'
 
+GI = {}
 
-def create_game_instance(session):
+
+def create_game_instance():
     player_role = session.get('player_role')
     player = create_player(player_role)
     computer_player = ComputerPlayer()
     game_instance = Game(player, computer_player, session)
     game_instance.set_player_role(player_role)
-    session['game_instance'] = game_instance
-
-
-    return game_instance
+    klucz = 1
+    GI[klucz] = game_instance
+    session['game_instance'] = klucz
+    print('****', session)
 
 
 # Funkcja do generowania początkowych pozycji pionków
@@ -45,9 +46,12 @@ BOARD = [
     [6, 1, 2, 3, 4, 5, 6, 7],
     [7, 1, 2, 3, 4, 5, 6, 7]
 ]
+
+
 @app.before_request
 def make_session_permanent():
     session.permanent = True
+
 
 @app.route('/')
 def hello():
@@ -57,11 +61,13 @@ def hello():
 @app.route('/choose_figure', methods=['GET', 'POST'])
 def choose_figure():
     if request.method == 'POST':
+        # Utwórz nową instancję gry dla sesji gracza
+        create_game_instance()
         selected_role = request.form['figure']
         session['player_role'] = selected_role
         session['computer_role'] = "owca" if selected_role == "wilk" else "wilk"
         session.modified = True
-        return redirect('/game?player_role=' + selected_role)
+        return redirect('/game')
     return render_template('choose_figure.html', player_role=session.get('player_role'))
 
 
@@ -82,16 +88,13 @@ def game():
         else:
             return redirect('/choose_figure')
 
-    # Utwórz nową instancję gry dla sesji gracza
-    game_instance = create_game_instance(session=session)
     session['current_turn'] = 'player'
-
     # Sprawdź role użytkowników
     player_role = session.get('player_role')
     computer_role = session.get('computer_role')
     print(f"DEBUG: Player Role: {player_role}")
     print(f"DEBUG: Computer Role: {computer_role}")
-
+    game_instance = GI[session.get('game_instance')]
     is_game_over, game_result = game_instance.is_game_over()
 
     if not is_game_over:
@@ -115,10 +118,11 @@ def game():
                            BOARD=BOARD, game_instance=session.get('game_instance'))
 
 
-@app.route('/move', methods=['POST'])
-def move():
+@app.route('/move', methods=['GET'])
+# @app.route('/move/<row:int>/<col:int>', methods=['GET'])
+def move(selected_row=None, selected_col=None):
     print(f"DEBUG: Session contents before /move: {session}")
-    game_instance = pickle.loads(session['game_instance'])
+    game_instance = session['game_instance']
     # Wyświetlenie szachownicy
     for row in board():
         print(' '.join(map(str, row)))
@@ -127,7 +131,6 @@ def move():
     selected_row = int(request.form.get('row'))
     selected_col = int(request.form.get('col'))
 
-    game_instance = session['game_instance']
     sheeps = game_instance.sheep
     wolf = game_instance.wolf
 
@@ -146,6 +149,7 @@ def move():
 
         if not is_game_over:
             # Jeśli gra się nie zakończyła, to przełącz na turę komputera
+            game_instance.switch_player()
             session['current_turn'] = 'computer'
             handle_computer_move()
 
@@ -194,19 +198,8 @@ def handle_computer_move():
 
 def handle_player_move():
     if 'game_instance' in session:
-        game_instance = session.get('game_instance')
         user_move = redirect('/move')
         print("DEBUG: Handling player move")
-
-        is_game_over, _ = game_instance.is_game_over()
-
-        if not is_game_over:
-            game_instance.switch_player()
-            print(f"DEBUG: Current turn after player move: {game_instance.current_player.get_role()}")
-
-        else:
-            print("Invalid move. Piece out of bounds.")
-
         session.modified = True
         return user_move
     else:
@@ -262,12 +255,6 @@ def is_occupied_by_other_piece(position):
                 if 0 <= sheep_row < len(BOARD) and 0 <= sheep_col < len(BOARD[0]):
                     if sheep_row == row and sheep_col == col:
                         return True
-
-            # Sprawdź, czy na danej pozycji znajduje się wilk
-            if isinstance(game_instance.wolf, list):
-                wolf_row, wolf_col = game_instance.wolf
-            elif isinstance(game_instance.wolf, Wolf):
-                wolf_row, wolf_col = game_instance.wolf.get_position()
 
             # Sprawdź, czy na danej pozycji znajduje się wilk
             wolf_row, wolf_col = wolf.get_position()
