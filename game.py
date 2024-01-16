@@ -1,7 +1,4 @@
-from flask import session
-
 from Players.Player import Player, SheepPlayer, WolfPlayer
-from Players.ComputerPlayer import ComputerPlayer
 from Figures.Sheep import Sheep
 from Figures.Wolf import Wolf
 

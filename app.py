@@ -61,13 +61,13 @@ def hello():
 @app.route('/choose_figure', methods=['GET', 'POST'])
 def choose_figure():
     if request.method == 'POST':
-        # Utwórz nową instancję gry dla sesji gracza
-        create_game_instance()
         selected_role = request.form['figure']
         session['player_role'] = selected_role
+        create_game_instance()
+        print(session['player_role'])
         session['computer_role'] = "owca" if selected_role == "wilk" else "wilk"
         session.modified = True
-        return redirect('/game')
+        return redirect('/game?player_role=' + selected_role)
     return render_template('choose_figure.html', player_role=session.get('player_role'))
 
 
@@ -208,10 +208,10 @@ def get_possible_moves(row, col):
         possible_moves = [(row - 1, col - 1), (row - 1, col + 1)]
 
     # Filtruj możliwe ruchy, aby nie wyjść poza szachownicę
-    #possible_moves = [(row, col) for row, col in possible_moves if is_position_within_board((row, col))]
+    # possible_moves = [(row, col) for row, col in possible_moves if is_position_within_board((row, col))]
 
     # Dodaj logikę, aby nie zachodzić na inne pionki
-    #possible_moves = [(row, col) for row, col in possible_moves if not is_occupied_by_other_piece((row, col))]
+    # possible_moves = [(row, col) for row, col in possible_moves if not is_occupied_by_other_piece((row, col))]
 
     return possible_moves
 
