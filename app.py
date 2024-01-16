@@ -154,6 +154,16 @@ def move():
         selected_move_col = int(request.form.get('moveCol'))
         print(f"DEBUG: Selected Move Row: {selected_move_row}, Selected Move Col: {selected_move_col}")
 
+        # Zaktualizuj pozycję pionka gracza w obiekcie game_instance
+        player_role = session.get('player_role')
+        if player_role == 'wilk':
+            game_instance.wolf.set_position(selected_move_row, selected_move_col)
+        else:
+            # Znajdź odpowiedniego owcę do aktualizacji
+            for sheep in game_instance.sheep:
+                if sheep.selected:
+                    sheep.set_position(selected_move_row, selected_move_col)
+
         # Po ruchu gracza sprawdź, czy gra się zakończyła
         is_game_over, game_result = game_instance.is_game_over()
 
