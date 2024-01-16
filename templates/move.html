@@ -17,8 +17,8 @@
         .possible-move {
             background-color: #eba3c8;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 30px;
+            height: 30px;
             position: absolute;
             left: 50%; /* Centrowanie w komórce */
             top: 50%; /* Centrowanie w komórce */
@@ -27,17 +27,27 @@
             cursor: pointer;
         }
 
+        body {
+            font-family: 'Futura', sans-serif;
+            color: #4b280a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
         /* Stylizacja szachownicy */
         .board {
             display: grid;
-            grid-template-columns: repeat(8, 50px); /* Odpowiada szerokości komórki planszy w pikselach */
-            grid-template-rows: repeat(8, 50px); /* Odpowiada wysokości komórki planszy w pikselach */
+            grid-template-columns: repeat(8, 70px); /* Odpowiada szerokości komórki planszy w pikselach */
+            grid-template-rows: repeat(8, 70px); /* Odpowiada wysokości komórki planszy w pikselach */
         }
 
         .cell {
-            width: 50px; /* Szerokość komórki planszy w pikselach */
-            height: 50px; /* Wysokość komórki planszy w pikselach */
-            border: 1px solid black;
+            width: 70px; /* Szerokość komórki planszy w pikselach */
+            height: 70px; /* Wysokość komórki planszy w pikselach */
+            border: 2px solid #666666;
             position: relative; /* aby pionki były pozycjonowane wewnątrz komórki */
         }
 
@@ -56,9 +66,10 @@
             background-color: #a3c8eb;
             border-radius: 50%;
             /* Ustaw pozycję pionka w środku komórki */
-            left: 5px; /* Odstęp od lewej krawędzi komórki */
-            top: 5px; /* Odstęp od górnej krawędzi komórki */
+            left: 10px; /* Odstęp od lewej krawędzi komórki */
+            top: 10px; /* Odstęp od górnej krawędzi komórki */
             z-index: 1;
+            cursor: pointer;
         }
 
         .wolf {
@@ -67,18 +78,19 @@
             height: 40px; /* Wysokość pionka wilka */
             background-color: gray;
             border-radius: 50%;
-            left: 5px; /* Odstęp od lewej krawędzi komórki */
-            top: 5px; /* Odstęp od górnej krawędzi komórki */
+            left: 10px; /* Odstęp od lewej krawędzi komórki */
+            top: 10px; /* Odstęp od górnej krawędzi komórki */
             z-index: 1; /* Ustawienie pionka wilka na pierwszym planie */
+            cursor: pointer;
         }
 
         .piece {
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-        }
 
+        }
     </style>
 
     <script src="/static/game.js"></script>
@@ -94,7 +106,6 @@
     </form>
 
     {% block content %}
-    <h1>Wykonaj ruch!</h1>
 
     <div class="board">
         {% for row in range(8) %}

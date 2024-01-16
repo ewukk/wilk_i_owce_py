@@ -3,10 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <title>Figury</title>
+    <style>
+        body {
+            font-family: 'Futura', sans-serif;
+            color: #4b280a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px; /* Dostosuj padding do preferencji */
+            font-size: 16px; /* Dostosuj rozmiar czcionki do preferencji */
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            border: 2px solid #3498db; /* Kolor obramowania przycisku */
+            border-radius: 5px; /* Zaokrąglenie rogów */
+            color: #ffffff; /* Kolor tekstu */
+            background-color: #3498db; /* Kolor tła przycisku */
+            transition: background-color 0.3s, color 0.3s; /* Płynne przejścia */
+        }
+
+        /* Efekt hover dla przycisku */
+        .button:hover {
+            background-color: #ffffff; /* Kolor tła po najechaniu kursorem */
+            color: #3498db; /* Kolor tekstu po najechaniu kursorem */
+        }
+    </style>
 </head>
 <body>
-    <button onclick="selectRole('owca')">Wybierz Owca</button>
-    <button onclick="selectRole('wilk')">Wybierz Wilk</button>
+    <h1>Wybierz swoją rolę:</h1>
+    <br>
+    <button class="button" onclick="selectRole('owca')">Owce</button>
+    <br>
+    <button class="button" onclick="selectRole('wilk')">Wilk</button>
 
     <script>
         function selectRole(role) {
