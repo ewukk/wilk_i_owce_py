@@ -215,6 +215,8 @@ def handle_computer_move():
 
     # Przekaż te informacje do funkcji obsługującej ruch komputera
     sheepIndex, new_position = get_computer_move(wolf_position, sheep_positions)
+    print('Sheep Index:', sheepIndex)
+    print('New position:', new_position)
 
     # Sprawdź, czy nowa pozycja różni się od obecnej
     if new_position != wolf_position and new_position not in sheep_positions:
@@ -255,37 +257,6 @@ def get_possible_moves(row, col):
     return possible_moves
 
 
-def is_position_within_board(position):
-    row, col = position
-    # Sprawdź, czy indeksy wiersza i kolumny są w granicach szachownicy
-    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
-        return True
-    else:
-        return False
-
-
-def is_occupied_by_other_piece(position):
-    row, col = position
-
-    game_instance = GI[session.get('game_instance')]
-    wolf = game_instance.wolf
-    sheeps = [sheep.get_position() for sheep in game_instance.sheep]
-
-    # Sprawdź, czy pozycja mieści się w zakresie planszy
-    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
-        # Sprawdź, czy na danej pozycji znajduje się owca
-        if (row, col) in sheeps:
-            return True
-
-        # Sprawdź, czy na danej pozycji znajduje się wilk
-        wolf_row, wolf_col = wolf.get_position()
-        if wolf_row == row and wolf_col == col:
-            return True
-
-    # Jeśli nie ma owcy ani wilka na danej pozycji, to nie jest zajęte przez inny pionek
-    return False
-
-
 def get_computer_move(wolf_position, sheep_positions):
     global move_mapping
 
@@ -317,7 +288,7 @@ def get_computer_move(wolf_position, sheep_positions):
         print(f"DEBUG: Nowa pozycja pionka: {new_position}")
         print("DEBUG: Pobierz Ruch Komputera - Koniec")
 
-        return new_position
+        return None, new_position
 
     elif computer_role == "owca":
         move_mapping = {
@@ -384,6 +355,37 @@ def calculate_new_position(current_position, move, role):
         print(f"Nowa pozycja {new_position} wykracza poza szachownicę. Wybieranie nowej pozycji.")
 
         return calculate_new_position(current_position, "RANDOM_MOVE", role)
+
+
+def is_position_within_board(position):
+    row, col = position
+    # Sprawdź, czy indeksy wiersza i kolumny są w granicach szachownicy
+    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
+        return True
+    else:
+        return False
+
+
+def is_occupied_by_other_piece(position):
+    row, col = position
+
+    game_instance = GI[session.get('game_instance')]
+    wolf = game_instance.wolf
+    sheeps = [sheep.get_position() for sheep in game_instance.sheep]
+
+    # Sprawdź, czy pozycja mieści się w zakresie planszy
+    if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
+        # Sprawdź, czy na danej pozycji znajduje się owca
+        if (row, col) in sheeps:
+            return True
+
+        # Sprawdź, czy na danej pozycji znajduje się wilk
+        wolf_row, wolf_col = wolf.get_position()
+        if wolf_row == row and wolf_col == col:
+            return True
+
+    # Jeśli nie ma owcy ani wilka na danej pozycji, to nie jest zajęte przez inny pionek
+    return False
 
 
 if __name__ == '__main__':
