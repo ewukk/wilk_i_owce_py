@@ -113,7 +113,7 @@
 
 
                     {% if (row, col) in possible_moves %}
-                        <div class="possible-move" onclick="submitMove({{ row }}, {{ col }})"></div>
+                        <div class="possible-move" data-row="{{ row }}" data-col="{{ col }}" onclick="submitMove({{ row }}, {{ col }})"></div>
                     {% endif %}
 
                 </div>
@@ -122,8 +122,9 @@
     </div>
 
     <form id="moveForm" action="/move" method="POST">
-        <input type="hidden" id="selectedRow" name="row" value="">
-        <input type="hidden" id="selectedCol" name="col" value="">
+        <input type="hidden" id="selectedMoveRow" name="moveRow" value="">
+        <input type="hidden" id="selectedMoveCol" name="moveCol" value="">
+        <input type="hidden" name="form_type" value="moveForm">
     </form>
 
     {% endblock content %}
@@ -135,6 +136,7 @@
 
     // Odczekaj na załadowanie całej strony
     document.addEventListener("DOMContentLoaded", function() {
+        console.log('Kod JavaScript działa!');
         // Ustaw wartości dla ukrytych pól formularza
         document.getElementById('selectedPieceRow').value = selectedPieceRow;
         document.getElementById('selectedPieceCol').value = selectedPieceCol;
@@ -147,6 +149,15 @@
         var pieceSelectedRow = sessionStorage.getItem('selectedPieceRow');
         var pieceSelectedCol = sessionStorage.getItem('selectedPieceCol');
         console.log('Po pobraniu z sessionStorage:', pieceSelectedRow, pieceSelectedCol);
+
+        // Znajdź zaznaczony pionek na planszy i zmień mu kolor
+        var selectedPiece = document.querySelector(`.piece[data-row="${pieceSelectedRow}"][data-col="${pieceSelectedCol}"]`);
+        console.log('Wybrany pionek:', selectedPiece);
+        if (selectedPiece) {
+            selectedPiece.classList.add('user-selected-piece');
+            console.log('Klasa user-selected-piece dodana do pionka.');
+        }
     });
 </script>
+
 </html>

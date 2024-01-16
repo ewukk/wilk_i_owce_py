@@ -123,37 +123,48 @@ def move():
     for row in board():
         print(' '.join(map(str, row)))
 
-    # Pobierz pozycję zaznaczonego pionka z formularza
-    selected_row = int(request.form.get('row'))
-    selected_col = int(request.form.get('col'))
-    print(f"DEBUG: Selected Row: {selected_row}, Selected Col: {selected_col}")
-
+    print('Formularz', request.form)
+    # Sprawdź, czy form_type istnieje w żądaniu POST
+    form_type = request.form.get('form_type', None)
     sheeps = game_instance.sheep
     wolf = game_instance.wolf
-    print(f"DEBUG: Sheep Positions: {[sheep.get_position() for sheep in sheeps]}")
-    print(f"DEBUG: Wolf Position: {wolf.get_position()}")
+    possible_moves = []
 
-    # Zaznacz pionka jako wybranego
-    for sheep in sheeps:
-        sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
-    wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
+    if form_type == 'pieceForm':
+        # Pobierz pozycję zaznaczonego pionka z formularza
+        selected_row = int(request.form.get('row'))
+        selected_col = int(request.form.get('col'))
+        print(f"DEBUG: Selected Row: {selected_row}, Selected Col: {selected_col}")
 
-    # Określ możliwe ruchy dla zaznaczonego pionka
-    possible_moves = get_possible_moves(selected_row, selected_col)
-    print(f"DEBUG: Possible Moves: {possible_moves}")
+        print(f"DEBUG: Sheep Positions: {[sheep.get_position() for sheep in sheeps]}")
+        print(f"DEBUG: Wolf Position: {wolf.get_position()}")
 
-    if request.method == 'POST':
+        # Zaznacz pionka jako wybranego
+        for sheep in sheeps:
+            sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
+        wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
+
+        # Określ możliwe ruchy dla zaznaczonego pionka
+        possible_moves = get_possible_moves(selected_row, selected_col)
+        print(f"DEBUG: Possible Moves: {possible_moves}")
+
+    elif form_type == 'moveForm':
+        # Pobierz pozycję zaznaczonego possible_move z formularza
+        selected_move_row = int(request.form.get('moveRow'))
+        selected_move_col = int(request.form.get('moveCol'))
+        print(f"DEBUG: Selected Move Row: {selected_move_row}, Selected Move Col: {selected_move_col}")
 
         # Po ruchu gracza sprawdź, czy gra się zakończyła
         is_game_over, game_result = game_instance.is_game_over()
 
-        # if not is_game_over:
+        if not is_game_over:
+            print('lalalalalal')
             # Jeśli gra się nie zakończyła, to przełącz na turę komputera
-            #game_instance.switch_player()
-            # session['current_turn'] = 'computer'
-            # handle_computer_move()
+            game_instance.switch_player()
+            session['current_turn'] = 'computer'
+            handle_computer_move()
 
-        # return redirect(url_for('game'))
+        return redirect(url_for('game'))
 
     return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
 

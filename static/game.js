@@ -21,7 +21,6 @@ window.selectPiece = function(row, col, playerRole) {
 
         // Przenieś przekierowanie do /move tutaj
         console.log('Zaznaczony pionek w /game:', row, col);
-        console.log('Po dodaniu klasy:', selectedPiece.classList);
 
         // Pobierz te informacje po zapisaniu
         var selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
@@ -37,15 +36,11 @@ window.selectPiece = function(row, col, playerRole) {
     }
 }
 
-
-
-// Funkcja do obsługi kliknięcia w możliwe pole ruchu
 function submitMove(row, col) {
-    // Ustaw wartości w formularzu
-    document.getElementById('selectedRow').value = row;
-    document.getElementById('selectedCol').value = col;
+    // Ustaw wartości w ukrytych polach formularza moveForm
+    document.getElementById('selectedMoveRow').value = row;
+    document.getElementById('selectedMoveCol').value = col;
 
-    // Wyślij żądanie POST do /game
+    // Wyślij żądanie POST do /move
     document.getElementById('moveForm').submit();
 }
-
