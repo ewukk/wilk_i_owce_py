@@ -147,13 +147,13 @@ def move():
         # Po ruchu gracza sprawdź, czy gra się zakończyła
         is_game_over, game_result = game_instance.is_game_over()
 
-        if not is_game_over:
+        # if not is_game_over:
             # Jeśli gra się nie zakończyła, to przełącz na turę komputera
-            game_instance.switch_player()
-            session['current_turn'] = 'computer'
-            handle_computer_move()
+            #game_instance.switch_player()
+            # session['current_turn'] = 'computer'
+            # handle_computer_move()
 
-        return redirect(url_for('game'))
+        # return redirect(url_for('game'))
 
     return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
 
