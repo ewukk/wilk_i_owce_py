@@ -319,42 +319,49 @@ def get_computer_move(wolf_position, sheep_positions):
         return sheepIndex, new_position
 
 
-def calculate_new_position(current_position, move, role):
+def calculate_new_position(current_position, move, role, attempts=None):
     # Metoda do obliczania nowej pozycji na podstawie aktualnej pozycji, ruchu i roli
+    max_attempts = 10
     row, col = current_position
     print(f"DEBUG: Obliczanie nowej pozycji. Aktualna pozycja: {current_position}")
+    if attempts is None:
+        attempts = 0
 
-    if role == 'wilk':
-        # Logika dla ruchu wilka
-        if move == 'DIAGONAL_UP_LEFT':
-            new_position = row - 1, col - 1
-        elif move == 'DIAGONAL_UP_RIGHT':
-            new_position = row - 1, col + 1
-        elif move == 'DIAGONAL_DOWN_LEFT':
-            new_position = row + 1, col - 1
-        elif move == 'DIAGONAL_DOWN_RIGHT':
-            new_position = row + 1, col + 1
+    if attempts < max_attempts:
+        if role == 'wilk':
+            # Logika dla ruchu wilka
+            if move == 'DIAGONAL_UP_LEFT':
+                new_position = row - 1, col - 1
+            elif move == 'DIAGONAL_UP_RIGHT':
+                new_position = row - 1, col + 1
+            elif move == 'DIAGONAL_DOWN_LEFT':
+                new_position = row + 1, col - 1
+            elif move == 'DIAGONAL_DOWN_RIGHT':
+                new_position = row + 1, col + 1
+            else:
+                new_position = row, col
+        elif role == 'owca':
+            # Logika dla ruchu owcy
+            if move == 'DIAGONAL_UP_LEFT':
+                new_position = row - 1, col - 1
+            elif move == 'DIAGONAL_UP_RIGHT':
+                new_position = row - 1, col + 1
+            else:
+                new_position = row, col
         else:
+            # Logika dla innej roli (możesz dostosować do własnych potrzeb)
             new_position = row, col
-    elif role == 'owca':
-        # Logika dla ruchu owcy
-        if move == 'DIAGONAL_UP_LEFT':
-            new_position = row - 1, col - 1
-        elif move == 'DIAGONAL_UP_RIGHT':
-            new_position = row - 1, col + 1
+
+        # Sprawdź, czy nowa pozycja wykracza poza szachownicę
+        if is_position_within_board(new_position):
+            return new_position
         else:
-            new_position = row, col
+            print('Attemps: ', attempts)
+            print(f"Nowa pozycja {new_position} wykracza poza szachownicę. Wybieranie nowej pozycji.")
+            return calculate_new_position(current_position, "RANDOM_MOVE", role, attempts=attempts + 1)
     else:
-        # Logika dla innej roli (możesz dostosować do własnych potrzeb)
-        new_position = row, col
-
-    # Sprawdź, czy nowa pozycja wykracza poza szachownicę
-    if is_position_within_board(new_position):
-        return new_position
-    else:
-        print(f"Nowa pozycja {new_position} wykracza poza szachownicę. Wybieranie nowej pozycji.")
-
-        return calculate_new_position(current_position, "RANDOM_MOVE", role)
+        print(f"Nie udało się znaleźć dostępnej pozycji po {max_attempts} próbach. Przekierowanie do /game_over.")
+        return redirect(url_for('game_over', winner='Gracz'))
 
 
 def is_position_within_board(position):
