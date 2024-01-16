@@ -1,4 +1,4 @@
-from Players.Player import Player, SheepPlayer, WolfPlayer
+from Players.Player import SheepPlayer, WolfPlayer
 from Figures.Sheep import Sheep
 from Figures.Wolf import Wolf
 
@@ -68,31 +68,28 @@ class Game:
     def is_game_over(self):
         if self.is_wolf_winner():
             print("DEBUG: Wolf wins condition met")
-            return True, "Wilk wygrywa!"
+            return True, self.current_player.get_role()
         elif self.is_sheep_winner():
             print("DEBUG: Sheep wins condition met")
-            return True, "Owce wygrywają!"
-        elif self.is_blocked():
-            print("DEBUG: Blocked condition met")
-            return True, "Owce zablokowały wilka. Koniec gry!"
+            return True, self.current_player.get_role()
 
         return False, "Gra trwa."
 
     def is_wolf_winner(self):
-        row, col = self.wolf.get_position()
-        wolf_winner = col == 7
+        wolf_row, wolf_col = self.wolf.get_position()
+
+        # Sprawdź, czy wszystkie owce są w rzędzie o indeksie 0
+        all_sheep_in_top_row = all(sheep.get_position()[0] == 0 for sheep in self.sheep)
+
+        # Zwycięstwo wilka, jeśli znajduje się w rzędzie o indeksie 7 i wszystkie owce są w rzędzie o indeksie 0
+        wolf_winner = wolf_row == 7 or all_sheep_in_top_row
 
         return wolf_winner
 
     def is_sheep_winner(self):
-        sheep_winner = all(sheep.get_position()[1] == 0 for sheep in self.sheep)
-
-        return sheep_winner
-
-    def is_blocked(self):
         row, col = self.wolf.get_position()
-        blocked_condition = all(
+        sheep_winner = all(
             sheep.get_position() == (row - 1, col) or sheep.get_position() == (row + 1, col)
             for sheep in self.sheep)
 
-        return blocked_condition
+        return sheep_winner

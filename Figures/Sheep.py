@@ -12,5 +12,5 @@ class Sheep:
         self.col = col
 
     def get_index(self):
-        return f"sheep{self.index}"
+        return self.index
 
