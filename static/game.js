@@ -1,4 +1,3 @@
-
 window.selectPiece = function(row, col, playerRole) {
     // Sprawdź aktualną rolę gracza
     var currentPlayerRole = currentTurn === 'player' ? playerRole : computerRole;
@@ -16,18 +15,18 @@ window.selectPiece = function(row, col, playerRole) {
         selectedPiece.classList.add('user-selected-piece');
         selectedPiece.isSelected = true;
 
-        console.log('Zaznaczony pionek przed sessionStorage:', row, col);
-
         // Zapisz informacje o zaznaczonym pionku w sessionStorage
         sessionStorage.setItem('selectedPieceRow', row);
         sessionStorage.setItem('selectedPieceCol', col);
+
+        // Przenieś przekierowanie do /move tutaj
+        console.log('Zaznaczony pionek w /game:', row, col);
+        console.log('Po dodaniu klasy:', selectedPiece.classList);
 
         // Pobierz te informacje po zapisaniu
         var selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
         var selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
         console.log('Po pobraniu z sessionStorage:', selectedPieceRow, selectedPieceCol);
-
-        console.log('Zaznaczony pionek w /game:', row, col);
 
         // Ustaw wartości w formularzu
         document.getElementById('selectedRow').value = row;
@@ -37,6 +36,7 @@ window.selectPiece = function(row, col, playerRole) {
         console.log('Nie możesz zaznaczyć tego pionka.');
     }
 }
+
 
 
 // Funkcja do obsługi kliknięcia w możliwe pole ruchu

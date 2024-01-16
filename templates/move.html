@@ -11,7 +11,7 @@
         }
 
         .user-selected-piece {
-            background-color: #61788d; /* Nowy kolor dla zaznaczonego pionka w /move */
+            background-color: #61788d !important; /* Nowy kolor dla zaznaczonego pionka w /move */
         }
 
         .possible-move {
@@ -81,15 +81,8 @@
 
     </style>
 
-    <script src="/static/game.js">
-        // Pobierz informacje o zaznaczonym pionku z sessionStorage
-        const selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
-        const selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
+    <script src="/static/game.js"></script>
 
-        // Ustaw wartości dla ukrytych pól formularza
-        document.getElementById('selectedPieceRow').value = selectedPieceRow;
-        document.getElementById('selectedPieceCol').value = selectedPieceCol;
-    </script>
 </head>
 
 <body>
@@ -135,4 +128,25 @@
 
     {% endblock content %}
 </body>
+<script>
+    // Pobierz informacje o zaznaczonym pionku z sessionStorage
+    const selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
+    const selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
+
+    // Odczekaj na załadowanie całej strony
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ustaw wartości dla ukrytych pól formularza
+        document.getElementById('selectedPieceRow').value = selectedPieceRow;
+        document.getElementById('selectedPieceCol').value = selectedPieceCol;
+
+        // Ustaw wartości dla pól selectedRow i selectedCol
+        document.getElementById('selectedRow').value = selectedPieceRow;
+        document.getElementById('selectedCol').value = selectedPieceCol;
+
+        // Pobierz te informacje po zapisaniu
+        var pieceSelectedRow = sessionStorage.getItem('selectedPieceRow');
+        var pieceSelectedCol = sessionStorage.getItem('selectedPieceCol');
+        console.log('Po pobraniu z sessionStorage:', pieceSelectedRow, pieceSelectedCol);
+    });
+</script>
 </html>
