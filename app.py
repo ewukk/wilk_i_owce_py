@@ -228,11 +228,8 @@ def get_possible_moves(row, col):
         # Logika dla ruchu owcy (do przodu na ukos)
         possible_moves = [(row - 1, col - 1), (row - 1, col + 1)]
 
-    # Filtruj możliwe ruchy, aby nie wyjść poza szachownicę
-    # possible_moves = [(row, col) for row, col in possible_moves if is_position_within_board((row, col))]
-
     # Dodaj logikę, aby nie zachodzić na inne pionki
-    # possible_moves = [(row, col) for row, col in possible_moves if not is_occupied_by_other_piece((row, col))]
+    possible_moves = [(row, col) for row, col in possible_moves if not is_occupied_by_other_piece((row, col))]
 
     return possible_moves
 
@@ -256,20 +253,17 @@ def is_occupied_by_other_piece(position):
     # Sprawdź, czy pozycja mieści się w zakresie planszy
     if 0 <= row < len(BOARD) and 0 <= col < len(BOARD[0]):
         # Sprawdź, czy na danej pozycji znajduje się owca
-        for sheep in sheeps:
-            sheep_row, sheep_col = sheep.get_position()
-            if 0 <= sheep_row < len(BOARD) and 0 <= sheep_col < len(BOARD[0]):
-                if sheep_row == row and sheep_col == col:
-                    return True
+        if (row, col) in sheeps:
+            return True
 
         # Sprawdź, czy na danej pozycji znajduje się wilk
         wolf_row, wolf_col = wolf.get_position()
-        if 0 <= wolf_row < len(BOARD) and 0 <= wolf_col < len(BOARD[0]):
-            if wolf_row == row and wolf_col == col:
-                return True
+        if wolf_row == row and wolf_col == col:
+            return True
 
     # Jeśli nie ma owcy ani wilka na danej pozycji, to nie jest zajęte przez inny pionek
     return False
+
 
 
 def get_computer_move(wolf_position, sheep_positions):

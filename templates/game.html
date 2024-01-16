@@ -72,10 +72,6 @@
 <body>
     {% block content %}
     <h1>Grajmy!</h1>
-    <p>Teraz tura: {{ current_turn }}</p>
-
-        {{ wolf }}
-        <p>player_role: {{ player_role }}</p>
 
     <div class="board">
         {% for row in range(8) %}
