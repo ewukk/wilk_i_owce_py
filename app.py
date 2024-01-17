@@ -396,4 +396,4 @@ def is_occupied_by_other_piece(position):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=1206, debug=True)

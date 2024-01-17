@@ -13,4 +13,3 @@ class Sheep:
 
     def get_index(self):
         return self.index
-

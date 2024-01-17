@@ -146,12 +146,12 @@
         document.getElementById('selectedCol').value = selectedPieceCol;
 
         // Pobierz te informacje po zapisaniu
-        var pieceSelectedRow = sessionStorage.getItem('selectedPieceRow');
-        var pieceSelectedCol = sessionStorage.getItem('selectedPieceCol');
+        let pieceSelectedRow = sessionStorage.getItem('selectedPieceRow');
+        let pieceSelectedCol = sessionStorage.getItem('selectedPieceCol');
         console.log('Po pobraniu z sessionStorage:', pieceSelectedRow, pieceSelectedCol);
 
         // Znajdź zaznaczony pionek na planszy i zmień mu kolor
-        var selectedPiece = document.querySelector(`.piece[data-row="${pieceSelectedRow}"][data-col="${pieceSelectedCol}"]`);
+        let selectedPiece = document.querySelector(`.piece[data-row="${pieceSelectedRow}"][data-col="${pieceSelectedCol}"]`);
         console.log('Wybrany pionek:', selectedPiece);
         if (selectedPiece) {
             selectedPiece.classList.add('user-selected-piece');

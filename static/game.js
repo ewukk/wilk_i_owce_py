@@ -1,9 +1,9 @@
 window.selectPiece = function(row, col, playerRole) {
     // Sprawdź aktualną rolę gracza
-    var currentPlayerRole = currentTurn === 'player' ? playerRole : computerRole;
+    let currentPlayerRole = currentTurn === 'player' ? playerRole : computerRole;
 
     // Sprawdź, czy kliknięty pionek odpowiada roli gracza
-    var selectedPiece = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
+    let selectedPiece = document.querySelector(`.piece[data-row="${row}"][data-col="${col}"]`);
     if (selectedPiece && selectedPiece.getAttribute("data-role") === currentPlayerRole) {
         // Usuń zaznaczenie dla wszystkich pionków
         document.querySelectorAll('.piece').forEach(piece => {
@@ -23,8 +23,8 @@ window.selectPiece = function(row, col, playerRole) {
         console.log('Zaznaczony pionek w /game:', row, col);
 
         // Pobierz te informacje po zapisaniu
-        var selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
-        var selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
+        let selectedPieceRow = sessionStorage.getItem('selectedPieceRow');
+        let selectedPieceCol = sessionStorage.getItem('selectedPieceCol');
         console.log('Po pobraniu z sessionStorage:', selectedPieceRow, selectedPieceCol);
 
         // Ustaw wartości w formularzu
