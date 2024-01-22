@@ -86,106 +86,116 @@ def game():
             session['player_role'] = player_role
         else:
             return redirect('/choose_figure')
+    try:
+        session['current_turn'] = 'player'
+        # Sprawdź role użytkowników
+        player_role = session.get('player_role')
+        computer_role = session.get('computer_role')
+        print(f"DEBUG: Player Role: {player_role}")
+        print(f"DEBUG: Computer Role: {computer_role}")
+        game_instance = GI[session.get('game_instance')]
+        is_game_over, game_result = game_instance.is_game_over()
 
-    session['current_turn'] = 'player'
-    # Sprawdź role użytkowników
-    player_role = session.get('player_role')
-    computer_role = session.get('computer_role')
-    print(f"DEBUG: Player Role: {player_role}")
-    print(f"DEBUG: Computer Role: {computer_role}")
-    game_instance = GI[session.get('game_instance')]
-    is_game_over, game_result = game_instance.is_game_over()
+        if not is_game_over:  #
+            print("DEBUG: Tura gracza")  #
+            redirect('/move')  # Sprawdzić, czy to jest potrzebne
+        else:  #
+            winner = game_result  #
+            return redirect(url_for('game_over', winner=winner))  #
 
-    if not is_game_over:                                                #
-        print("DEBUG: Tura gracza")                                     #
-        redirect('/move')                                               # Sprawdzić, czy to jest potrzebne
-    else:                                                               #
-        winner = game_result                                            #
-        return redirect(url_for('game_over', winner=winner))    #
+        sheeps = game_instance.sheep
+        wolf = game_instance.wolf
+        print('=========', game_instance.wolf)
+        sheep_positions = [sheep.get_position() for sheep in sheeps]
+        initialSheepPositions = [sheep.get_position() for sheep in sheeps]
 
-    sheeps = game_instance.sheep
-    wolf = game_instance.wolf
-    print('=========', game_instance.wolf)
-    sheep_positions = [sheep.get_position() for sheep in sheeps]
-    initialSheepPositions = [sheep.get_position() for sheep in sheeps]
-
-    return render_template('game.html', sheeps=sheeps, wolf=wolf, result=result,
-                           computer_result=computer_result, sheep_positions=sheep_positions,
-                           initialSheepPositions=initialSheepPositions,
-                           move_history=game_instance.move_history,
-                           is_game_over=is_game_over, current_turn=session.get('current_turn'),
-                           BOARD=BOARD, game_instance=session.get('game_instance'), player_role=player_role)
+        return render_template('game.html', sheeps=sheeps, wolf=wolf, result=result,
+                               computer_result=computer_result, sheep_positions=sheep_positions,
+                               initialSheepPositions=initialSheepPositions,
+                               move_history=game_instance.move_history,
+                               is_game_over=is_game_over, current_turn=session.get('current_turn'),
+                               BOARD=BOARD, game_instance=session.get('game_instance'), player_role=player_role)
+    except KeyError as e:
+        # Obsługa błędu KeyError
+        print(f"Błąd KeyError: {e}")
+        # Przekieruj użytkownika z powrotem do '/hello'
+        return redirect(url_for('hello'))
 
 
 @app.route('/move', methods=['POST'])
 def move():
-    print(f"DEBUG: Session contents before /move: {session}")
-    game_instance = GI[session.get('game_instance')]
-    # Wyświetlenie szachownicy
-    for row in board():
-        print(' '.join(map(str, row)))
+    try:
+        print(f"DEBUG: Session contents before /move: {session}")
+        game_instance = GI[session.get('game_instance')]
+        # Wyświetlenie szachownicy
+        for row in board():
+            print(' '.join(map(str, row)))
 
-    print('Formularz', request.form)
-    # Sprawdź, czy form_type istnieje w żądaniu POST
-    form_type = request.form.get('form_type', None)
-    sheeps = game_instance.sheep
-    wolf = game_instance.wolf
-    possible_moves = []
+        print('Formularz', request.form)
+        # Sprawdź, czy form_type istnieje w żądaniu POST
+        form_type = request.form.get('form_type', None)
+        sheeps = game_instance.sheep
+        wolf = game_instance.wolf
+        possible_moves = []
 
-    if form_type == 'pieceForm':
-        # Pobierz pozycję zaznaczonego pionka z formularza
-        selected_row = int(request.form.get('row'))
-        selected_col = int(request.form.get('col'))
-        print(f"DEBUG: Selected Row: {selected_row}, Selected Col: {selected_col}")
+        if form_type == 'pieceForm':
+            # Pobierz pozycję zaznaczonego pionka z formularza
+            selected_row = int(request.form.get('row'))
+            selected_col = int(request.form.get('col'))
+            print(f"DEBUG: Selected Row: {selected_row}, Selected Col: {selected_col}")
+            print(f"DEBUG: Sheep Positions: {[sheep.get_position() for sheep in sheeps]}")
+            print(f"DEBUG: Wolf Position: {wolf.get_position()}")
 
-        print(f"DEBUG: Sheep Positions: {[sheep.get_position() for sheep in sheeps]}")
-        print(f"DEBUG: Wolf Position: {wolf.get_position()}")
+            # Zaznacz pionka jako wybranego
+            for sheep in sheeps:
+                sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
+            wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
 
-        # Zaznacz pionka jako wybranego
-        for sheep in sheeps:
-            sheep.selected = (sheep.row == selected_row and sheep.col == selected_col)
-        wolf.selected = (wolf.row == selected_row and wolf.col == selected_col)
+            # Określ możliwe ruchy dla zaznaczonego pionka
+            possible_moves = get_possible_moves(selected_row, selected_col)
+            if not possible_moves:
+                # Jeśli brak dostępnych ruchów, przekieruj do strony zakończenia gry
+                return redirect(url_for('game_over', winner=session.get('computer_role')))
+            print(f"DEBUG: Possible Moves: {possible_moves}")
 
-        # Określ możliwe ruchy dla zaznaczonego pionka
-        possible_moves = get_possible_moves(selected_row, selected_col)
-        if not possible_moves:
-            # Jeśli brak dostępnych ruchów, przekieruj do strony zakończenia gry
-            return redirect(url_for('game_over', winner=session.get('computer_role')))
-        print(f"DEBUG: Possible Moves: {possible_moves}")
+        elif form_type == 'moveForm':
+            # Pobierz pozycję zaznaczonego possible_move z formularza
+            selected_move_row = int(request.form.get('moveRow'))
+            selected_move_col = int(request.form.get('moveCol'))
+            print(f"DEBUG: Selected Move Row: {selected_move_row}, Selected Move Col: {selected_move_col}")
 
-    elif form_type == 'moveForm':
-        # Pobierz pozycję zaznaczonego possible_move z formularza
-        selected_move_row = int(request.form.get('moveRow'))
-        selected_move_col = int(request.form.get('moveCol'))
-        print(f"DEBUG: Selected Move Row: {selected_move_row}, Selected Move Col: {selected_move_col}")
+            # Zaktualizuj pozycję pionka gracza w obiekcie game_instance
+            player_role = session.get('player_role')
+            if player_role == 'wilk':
+                game_instance.wolf.set_position(selected_move_row, selected_move_col)
+            else:
+                # Znajdź odpowiedniego owcę do aktualizacji
+                for sheep in game_instance.sheep:
+                    if sheep.selected:
+                        sheep.set_position(selected_move_row, selected_move_col)
 
-        # Zaktualizuj pozycję pionka gracza w obiekcie game_instance
-        player_role = session.get('player_role')
-        if player_role == 'wilk':
-            game_instance.wolf.set_position(selected_move_row, selected_move_col)
-        else:
-            # Znajdź odpowiedniego owcę do aktualizacji
-            for sheep in game_instance.sheep:
-                if sheep.selected:
-                    sheep.set_position(selected_move_row, selected_move_col)
+            # Po ruchu gracza sprawdź, czy gra się zakończyła
+            is_game_over, game_result = game_instance.is_game_over()
 
-        # Po ruchu gracza sprawdź, czy gra się zakończyła
-        is_game_over, game_result = game_instance.is_game_over()
+            if not is_game_over:
+                # Jeśli gra się nie zakończyła, to przełącz na turę komputera
+                game_instance.switch_player()
+                session['current_turn'] = 'computer'
+                x = handle_computer_move()
+                if x == -9:
+                    return redirect(url_for('game_over', winner=session.get('player_role')))
 
-        if not is_game_over:
-            # Jeśli gra się nie zakończyła, to przełącz na turę komputera
-            game_instance.switch_player()
-            session['current_turn'] = 'computer'
-            x = handle_computer_move()
-            if x == -9:
-                return redirect(url_for('game_over', winner=session.get('player_role')))
+                return redirect(url_for('game'))
+            else:
 
-            return redirect(url_for('game'))
-        else:
+                return redirect(url_for('game_over', winner="winner"))
 
-            return redirect(url_for('game_over', winner="winner"))
-
-    return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
+        return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
+    except KeyError as e:
+        # Obsługa błędu KeyError
+        print(f"Błąd KeyError: {e}")
+        # Przekieruj użytkownika z powrotem do '/hello'
+        return redirect(url_for('hello'))
 
 
 @app.route('/game_over', methods=['GET', 'POST'])
@@ -207,14 +217,14 @@ def handle_computer_move():
 
     # Przekaż te informacje do funkcji obsługującej ruch komputera
     x = get_computer_move(wolf_position, sheep_positions)
-    #if x == (None, -9):
-        # Jeśli pierwsza wybrana owca nie miała dostępnych ruchów, spróbuj wybrać inną owcę
-        #for i, sheep_position in enumerate(sheep_positions):
-            #moves_for_sheep = get_possible_moves(*sheep_position)
-            #if moves_for_sheep:
-                #x = (i, random.choice(moves_for_sheep))
-                #print(f"DEBUG: Chosen move for sheep {i}: {x}")
-                #break
+    # if x == (None, -9):
+    # Jeśli pierwsza wybrana owca nie miała dostępnych ruchów, spróbuj wybrać inną owcę
+    # for i, sheep_position in enumerate(sheep_positions):
+    # moves_for_sheep = get_possible_moves(*sheep_position)
+    # if moves_for_sheep:
+    # x = (i, random.choice(moves_for_sheep))
+    # print(f"DEBUG: Chosen move for sheep {i}: {x}")
+    # break
 
     if x == (None, -9):
         # Jeśli żadna z owiec nie miała dostępnych ruchów, zakończ ruch komputera
@@ -253,7 +263,8 @@ def get_possible_moves(row, col):
         possible_moves = [(row - 1, col - 1), (row - 1, col + 1)]
 
     possible_moves = [
-        (row, col) for row, col in possible_moves if is_position_within_board((row, col)) and not is_occupied_by_other_piece((row, col))
+        (row, col) for row, col in possible_moves if
+        is_position_within_board((row, col)) and not is_occupied_by_other_piece((row, col))
     ]
 
     return possible_moves
