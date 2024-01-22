@@ -25,7 +25,7 @@ def create_game_instance():
 def generate_initial_positions():
     # Początkowe pozycje wilka i owiec
     wolf_position = {"id": "wolf", "row": 0, "col": 0}
-    sheep_positions = [{"id": f"sheep{i}", "row": 7, "col": 2 * i} for i in range(4)]
+    sheep_positions = [{"id": f"sheep{i}", "row": 3, "col": 2 * i} for i in range(4)]
 
     # Zwróć listę początkowych pozycji pionków
     return [wolf_position] + sheep_positions
@@ -96,12 +96,12 @@ def game():
     game_instance = GI[session.get('game_instance')]
     is_game_over, game_result = game_instance.is_game_over()
 
-    if not is_game_over:
-        print("DEBUG: Tura gracza")
-        redirect('/move')
-    else:
-        winner = game_result
-        return redirect(url_for('game_over', winner=winner))
+    if not is_game_over:                                                #
+        print("DEBUG: Tura gracza")                                     #
+        redirect('/move')                                               # Sprawdzić, czy to jest potrzebne
+    else:                                                               #
+        winner = game_result                                            #
+        return redirect(url_for('game_over', winner=winner))    #
 
     sheeps = game_instance.sheep
     wolf = game_instance.wolf
@@ -148,6 +148,9 @@ def move():
 
         # Określ możliwe ruchy dla zaznaczonego pionka
         possible_moves = get_possible_moves(selected_row, selected_col)
+        if not possible_moves:
+            # Jeśli brak dostępnych ruchów, przekieruj do strony zakończenia gry
+            return redirect(url_for('game_over', winner=session.get('computer_role')))
         print(f"DEBUG: Possible Moves: {possible_moves}")
 
     elif form_type == 'moveForm':
@@ -173,12 +176,14 @@ def move():
             # Jeśli gra się nie zakończyła, to przełącz na turę komputera
             game_instance.switch_player()
             session['current_turn'] = 'computer'
-            handle_computer_move()
+            x = handle_computer_move()
+            if x == -9:
+                return redirect(url_for('game_over', winner=session.get('player_role')))
 
             return redirect(url_for('game'))
         else:
-            winner = game_result
-            return redirect(url_for('game_over', winner=winner))
+
+            return redirect(url_for('game_over', winner="winner"))
 
     return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
 
@@ -199,22 +204,22 @@ def handle_computer_move():
     sheeps = game_instance.get_sheep()
     sheep_positions = [sheep.get_position() for sheep in sheeps]
     computer_role = session.get('computer_role')
-    computer_possible_moves = []
-
-    if computer_role == 'wilk':
-        computer_possible_moves = get_possible_moves(*wolf_position)
-    elif computer_role == 'owca':
-        for sheep_position in sheep_positions:
-            moves_for_sheep = get_possible_moves(*sheep_position)
-            computer_possible_moves.extend(moves_for_sheep)
-
-    print('Computer possible moves: ', computer_possible_moves)
-    if not computer_possible_moves:
-        # Jeśli brak dostępnych ruchów, przekieruj do strony zakończenia gry
-        return redirect(url_for('game_over', winner='Gracz'))
 
     # Przekaż te informacje do funkcji obsługującej ruch komputera
-    sheepIndex, new_position = get_computer_move(wolf_position, sheep_positions)
+    x = get_computer_move(wolf_position, sheep_positions)
+    #if x == (None, -9):
+        # Jeśli pierwsza wybrana owca nie miała dostępnych ruchów, spróbuj wybrać inną owcę
+        #for i, sheep_position in enumerate(sheep_positions):
+            #moves_for_sheep = get_possible_moves(*sheep_position)
+            #if moves_for_sheep:
+                #x = (i, random.choice(moves_for_sheep))
+                #print(f"DEBUG: Chosen move for sheep {i}: {x}")
+                #break
+
+    if x == (None, -9):
+        # Jeśli żadna z owiec nie miała dostępnych ruchów, zakończ ruch komputera
+        return -9
+    sheepIndex, new_position = x
     print('Sheep Index:', sheepIndex)
     print('New position:', new_position)
 
@@ -247,23 +252,29 @@ def get_possible_moves(row, col):
         # Logika dla ruchu owcy (do przodu na ukos)
         possible_moves = [(row - 1, col - 1), (row - 1, col + 1)]
 
-    # Dodaj logikę, aby nie zachodzić na inne pionki
-    possible_moves = [(row, col) for row, col in possible_moves if not is_occupied_by_other_piece((row, col))]
-
-    if not possible_moves:
-        # Jeśli brak dostępnych ruchów, przekieruj do strony zakończenia gry
-        return redirect(url_for('game_over', winner='winner'))
+    possible_moves = [
+        (row, col) for row, col in possible_moves if is_position_within_board((row, col)) and not is_occupied_by_other_piece((row, col))
+    ]
 
     return possible_moves
 
 
 def get_computer_move(wolf_position, sheep_positions):
     global move_mapping
-
+    computer_possible_moves = []
     game_instance = GI[session.get('game_instance')]
+    computer_role = session.get('computer_role')
     print("DEBUG: Pobierz Ruch Komputera - Start")
 
-    computer_role = session.get('computer_role')
+    if computer_role == 'wilk':
+        computer_possible_moves = get_possible_moves(*wolf_position)
+    elif computer_role == 'owca':
+        for i, sheep_position in enumerate(sheep_positions):
+            moves_for_sheep = get_possible_moves(*sheep_position)
+            moves_for_sheep = [(r, c) for r, c in moves_for_sheep if r < sheep_position[0]]
+            computer_possible_moves.extend([(i, move) for move in moves_for_sheep])
+
+    print('Computer possible moves: ', computer_possible_moves)
 
     # Sprawdź rolę komputera
     if computer_role == "wilk":
@@ -277,15 +288,19 @@ def get_computer_move(wolf_position, sheep_positions):
 
         # Wybierz jeden ruch
         chosen_move = random.choice(list(move_mapping.values()))
+        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
         new_position = calculate_new_position(current_position, chosen_move, computer_role)
 
         # Sprawdź, czy nowa pozycja jest dostępna (nie zajmuje jej inny pionek)
+        att = 0
         while is_occupied_by_other_piece(new_position):
             chosen_move = random.choice(list(move_mapping.values()))
-            new_position = calculate_new_position(current_position, chosen_move, computer_role)
+            new_position = calculate_new_position(current_position, chosen_move, computer_role, att)
+            print(f"DEBUG: Nowa pozycja pionka: {new_position}")
+            if new_position == -9:
+                return None, -9
+            att += 1
 
-        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
-        print(f"DEBUG: Nowa pozycja pionka: {new_position}")
         print("DEBUG: Pobierz Ruch Komputera - Koniec")
 
         return None, new_position
@@ -295,28 +310,40 @@ def get_computer_move(wolf_position, sheep_positions):
             "DIAGONAL_UP_LEFT": "DIAGONAL_UP_LEFT",
             "DIAGONAL_UP_RIGHT": "DIAGONAL_UP_RIGHT",
         }
-        # Wybierz losową owcę
-        chosen_sheep = random.choice(game_instance.get_sheep())
-        sheepIndex = chosen_sheep.get_index()
-        current_position = chosen_sheep.get_position()
-        print(f"DEBUG: Wybrana owca: {sheepIndex}")
+        # Znajdź owcę, która ma dostępne ruchy
+        available_sheep_moves = [(index, get_possible_moves(*position)) for index, position in
+                                 enumerate(sheep_positions) if get_possible_moves(*position)]
 
-        # Wybierz jeden ruch
-        chosen_move = random.choice(list(move_mapping.values()))
-        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
+        if not available_sheep_moves:
+            # Jeśli brak dostępnych ruchów dla owiec, zakończ ruch komputera
+            print("DEBUG: Żadna z owiec nie ma dostępnego ruchu.")
+            return None, -9
 
-        # Oblicz ruch na podstawie pozycji wybranej owcy
-        new_position = calculate_new_position(current_position, chosen_move, computer_role)
+        # Wybierz losową owcę z dostępnymi ruchami
+        chosen_index, chosen_moves = random.choice(available_sheep_moves)
+        chosen_sheep = game_instance.get_sheep()[chosen_index]
+        print(f"DEBUG: Wybrana owca: {chosen_sheep.get_index()}")
+
+        # Wybierz losowy ruch dla wybranej owcy
+        chosen_move = random.choice(chosen_moves)
+
+        # Oblicz nową pozycję dla wybranej owcy
+        new_position = calculate_new_position(chosen_sheep.get_position(), chosen_move, computer_role)
 
         # Sprawdź, czy nowa pozycja jest dostępna (nie zajmuje jej inny pionek)
+        att = 0
         while is_occupied_by_other_piece(new_position):
             chosen_move = random.choice(list(move_mapping.values()))
-            new_position = calculate_new_position(current_position, chosen_move, computer_role)
+            new_position = calculate_new_position(chosen_sheep.get_position(), chosen_move, computer_role, att)
+            if new_position == -9:
+                return None, -9
+            att += 1
+
+        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
         print(f"DEBUG: Nowa pozycja pionka: {new_position}")
 
         print("DEBUG: Pobierz Ruch Komputera - Koniec")
-
-        return sheepIndex, new_position
+        return chosen_sheep.get_index(), new_position
 
 
 def calculate_new_position(current_position, move, role, attempts=None):
@@ -327,6 +354,7 @@ def calculate_new_position(current_position, move, role, attempts=None):
     if attempts is None:
         attempts = 0
 
+    print('matt:', attempts)
     if attempts < max_attempts:
         if role == 'wilk':
             # Logika dla ruchu wilka
@@ -361,7 +389,7 @@ def calculate_new_position(current_position, move, role, attempts=None):
             return calculate_new_position(current_position, "RANDOM_MOVE", role, attempts=attempts + 1)
     else:
         print(f"Nie udało się znaleźć dostępnej pozycji po {max_attempts} próbach. Przekierowanie do /game_over.")
-        return redirect(url_for('game_over', winner='Gracz'))
+        return -9
 
 
 def is_position_within_board(position):
@@ -374,7 +402,10 @@ def is_position_within_board(position):
 
 
 def is_occupied_by_other_piece(position):
-    row, col = position
+    x = position
+    if x == -9:
+        return False
+    row, col = x
 
     game_instance = GI[session.get('game_instance')]
     wolf = game_instance.wolf
@@ -396,4 +427,4 @@ def is_occupied_by_other_piece(position):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1206, debug=True)
+    app.run(host='0.0.0.0', port=12106, debug=True)
