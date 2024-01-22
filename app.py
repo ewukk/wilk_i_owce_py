@@ -266,16 +266,6 @@ def get_computer_move(wolf_position, sheep_positions):
     computer_role = session.get('computer_role')
     print("DEBUG: Pobierz Ruch Komputera - Start")
 
-    if computer_role == 'wilk':
-        computer_possible_moves = get_possible_moves(*wolf_position)
-    elif computer_role == 'owca':
-        for i, sheep_position in enumerate(sheep_positions):
-            moves_for_sheep = get_possible_moves(*sheep_position)
-            moves_for_sheep = [(r, c) for r, c in moves_for_sheep if r < sheep_position[0]]
-            computer_possible_moves.extend([(i, move) for move in moves_for_sheep])
-
-    print('Computer possible moves: ', computer_possible_moves)
-
     # Sprawdź rolę komputera
     if computer_role == "wilk":
         move_mapping = {
@@ -285,6 +275,8 @@ def get_computer_move(wolf_position, sheep_positions):
             "DIAGONAL_DOWN_RIGHT": "DIAGONAL_DOWN_RIGHT",
         }
         current_position = game_instance.get_wolf().get_position()
+        computer_possible_moves = get_possible_moves(*wolf_position)
+        print('Computer possible moves for wolf: ', computer_possible_moves)
 
         # Wybierz jeden ruch
         chosen_move = random.choice(list(move_mapping.values()))
@@ -310,36 +302,36 @@ def get_computer_move(wolf_position, sheep_positions):
             "DIAGONAL_UP_LEFT": "DIAGONAL_UP_LEFT",
             "DIAGONAL_UP_RIGHT": "DIAGONAL_UP_RIGHT",
         }
-        # Znajdź owcę, która ma dostępne ruchy
-        available_sheep_moves = [(index, get_possible_moves(*position)) for index, position in
-                                 enumerate(sheep_positions) if get_possible_moves(*position)]
+        for i, sheep_position in enumerate(sheep_positions):
+            moves_for_sheep = get_possible_moves(*sheep_position)
+            moves_for_sheep = [(r, c) for r, c in moves_for_sheep if r < sheep_position[0]]
+            computer_possible_moves.extend([(i, move) for move in moves_for_sheep])
 
-        if not available_sheep_moves:
+        print('Computer possible moves for sheeps: ', computer_possible_moves)
+
+        # Znajdź owcę, która ma dostępne ruchy
+        if not computer_possible_moves:
             # Jeśli brak dostępnych ruchów dla owiec, zakończ ruch komputera
             print("DEBUG: Żadna z owiec nie ma dostępnego ruchu.")
             return None, -9
 
-        # Wybierz losową owcę z dostępnymi ruchami
-        chosen_index, chosen_moves = random.choice(available_sheep_moves)
+        # Wybierz losowy ruch spośród dostępnych ruchów dla owiec
+        chosen_index, chosen_move = random.choice(computer_possible_moves)
         chosen_sheep = game_instance.get_sheep()[chosen_index]
         print(f"DEBUG: Wybrana owca: {chosen_sheep.get_index()}")
-
-        # Wybierz losowy ruch dla wybranej owcy
-        chosen_move = random.choice(chosen_moves)
-
-        # Oblicz nową pozycję dla wybranej owcy
-        new_position = calculate_new_position(chosen_sheep.get_position(), chosen_move, computer_role)
+        new_position = chosen_move
+        print(f"DEBUG: Wybrana ruch komputera: {chosen_move}")
 
         # Sprawdź, czy nowa pozycja jest dostępna (nie zajmuje jej inny pionek)
         att = 0
-        while is_occupied_by_other_piece(new_position):
-            chosen_move = random.choice(list(move_mapping.values()))
+        while new_position == -9 or is_occupied_by_other_piece(new_position):
+            # Jeśli nowa pozycja jest zajęta, wybierz inny ruch
+            chosen_index, chosen_move = random.choice(computer_possible_moves)
             new_position = calculate_new_position(chosen_sheep.get_position(), chosen_move, computer_role, att)
             if new_position == -9:
                 return None, -9
             att += 1
 
-        print(f"DEBUG: Wybrany ruch komputera: {chosen_move}")
         print(f"DEBUG: Nowa pozycja pionka: {new_position}")
 
         print("DEBUG: Pobierz Ruch Komputera - Koniec")
