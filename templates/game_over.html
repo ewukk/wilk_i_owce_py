@@ -22,11 +22,36 @@
             margin-top: 20px; /* Odstęp między obrazkiem a przyciskiem */
         }
 
+        h3 {
+            margin-top: 20px; /* Odstęp między tekstem a przyciskiem */
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px; /* Dostosuj padding do preferencji */
+            font-size: 16px; /* Dostosuj rozmiar czcionki do preferencji */
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            border: 2px solid #3498db; /* Kolor obramowania przycisku */
+            border-radius: 5px; /* Zaokrąglenie rogów */
+            color: #ffffff; /* Kolor tekstu */
+            background-color: #3498db; /* Kolor tła przycisku */
+            transition: background-color 0.3s, color 0.3s; /* Płynne przejścia */
+        }
+
+        /* Efekt hover dla przycisku */
+        .button:hover {
+            background-color: #ffffff; /* Kolor tła po najechaniu kursorem */
+            color: #3498db; /* Kolor tekstu po najechaniu kursorem */
+        }
+
     </style>
 </head>
 <body>
     <h1>Gra skończona!</h1>
-    <h2>Wygrał: {{ winner }}</h2><br><br>
-    <img src="/static/images/game_over.png" alt="owca_i_wilk" width="500px">
+    <h2>Wygrał: {{ winner }}</h2>
+    <img src="/static/images/game_over.png" alt="owca_i_wilk" width="500px"><br>
+    <h3><a href="{{ url_for('hello') }}" class="button">Powrót do strony głównej!</a></h3>
 </body>
 </html>
