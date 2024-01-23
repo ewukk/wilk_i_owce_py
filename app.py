@@ -18,22 +18,7 @@ def create_game_instance():
     klucz = 1
     GI[klucz] = game_instance
     session['game_instance'] = klucz
-    print('****', session)
 
-
-# Funkcja do generowania początkowych pozycji pionków
-def generate_initial_positions():
-    # Początkowe pozycje wilka i owiec
-    wolf_position = {"id": "wolf", "row": 0, "col": 0}
-    sheep_positions = [{"id": f"sheep{i}", "row": 3, "col": 2 * i} for i in range(4)]
-
-    # Zwróć listę początkowych pozycji pionków
-    return [wolf_position] + sheep_positions
-
-
-data = {
-    "pieces": generate_initial_positions()
-}
 
 BOARD = [
     [0, 1, 2, 3, 4, 5, 6, 7],
@@ -63,7 +48,6 @@ def choose_figure():
         selected_role = request.form['figure']
         session['player_role'] = selected_role
         create_game_instance()
-        print(session['player_role'])
         session['computer_role'] = "owca" if selected_role == "wilk" else "wilk"
         session.modified = True
         return redirect('/game?player_role=' + selected_role)
@@ -91,22 +75,13 @@ def game():
         # Sprawdź role użytkowników
         player_role = session.get('player_role')
         computer_role = session.get('computer_role')
-        print(f"DEBUG: Player Role: {player_role}")
-        print(f"DEBUG: Computer Role: {computer_role}")
         game_instance = GI[session.get('game_instance')]
         is_game_over, game_result = game_instance.is_game_over()
-
-        if not is_game_over:  #
-            print("DEBUG: Tura gracza")  #
-            redirect('/move')  # Sprawdzić, czy to jest potrzebne
-        else:  #
-            winner = game_result  #
-            return redirect(url_for('game_over', winner=winner))  #
-
         sheeps = game_instance.sheep
         wolf = game_instance.wolf
-        print('=========', game_instance.wolf)
+        print('Pozycja wilka:', wolf)
         sheep_positions = [sheep.get_position() for sheep in sheeps]
+        print('Pozycje owiec:', sheep_positions)
         initialSheepPositions = [sheep.get_position() for sheep in sheeps]
 
         return render_template('game.html', sheeps=sheeps, wolf=wolf, result=result,
@@ -187,8 +162,7 @@ def move():
 
                 return redirect(url_for('game'))
             else:
-
-                return redirect(url_for('game_over', winner="winner"))
+                return redirect(url_for('game_over', winner=session.get('player_role')))
 
         return render_template('move.html', possible_moves=possible_moves, wolf=wolf, sheeps=sheeps)
     except KeyError as e:
@@ -217,14 +191,6 @@ def handle_computer_move():
 
     # Przekaż te informacje do funkcji obsługującej ruch komputera
     x = get_computer_move(wolf_position, sheep_positions)
-    # if x == (None, -9):
-    # Jeśli pierwsza wybrana owca nie miała dostępnych ruchów, spróbuj wybrać inną owcę
-    # for i, sheep_position in enumerate(sheep_positions):
-    # moves_for_sheep = get_possible_moves(*sheep_position)
-    # if moves_for_sheep:
-    # x = (i, random.choice(moves_for_sheep))
-    # print(f"DEBUG: Chosen move for sheep {i}: {x}")
-    # break
 
     if x == (None, -9):
         # Jeśli żadna z owiec nie miała dostępnych ruchów, zakończ ruch komputera

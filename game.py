@@ -38,7 +38,7 @@ class Game:
         self.user_move_completed = False
         self.move_history = {"owca": [], "wilk": []}
         self.wolf = Wolf(0, 3)
-        self.sheep = [Sheep(3, 0, 0), Sheep(3, 2, 1), Sheep(3, 4, 2), Sheep(3, 6, 3)]
+        self.sheep = [Sheep(7, 0, 0), Sheep(7, 2, 1), Sheep(7, 4, 2), Sheep(7, 6, 3)]
 
     def get_wolf(self):
         return self.wolf
@@ -78,11 +78,15 @@ class Game:
     def is_wolf_winner(self):
         wolf_row, wolf_col = self.wolf.get_position()
 
-        # Sprawdź, czy wszystkie owce są w rzędzie o indeksie 0
-        all_sheep_in_top_row = all(sheep.get_position()[0] == 0 for sheep in self.sheep)
+        # Sprawdź, czy wilk jest w równym wierszu co przynajmniej 1 owca
+        wolf_in_same_row_as_sheep = any(sheep.get_position()[0] == wolf_row for sheep in self.sheep)
 
-        # Zwycięstwo wilka, jeśli znajduje się w rzędzie o indeksie 7 i wszystkie owce są w rzędzie o indeksie 0
-        wolf_winner = wolf_row == 7 or all_sheep_in_top_row
+        # Sprawdź, czy pozostałe owce są w wierszach większych niż wilk
+        other_sheep_below_wolf = all(
+            sheep.get_position()[0] <= wolf_row for sheep in self.sheep if sheep.get_position()[0] is not None)
+
+        # Zwycięstwo wilka
+        wolf_winner = wolf_row == 7 or (wolf_in_same_row_as_sheep and other_sheep_below_wolf)
 
         return wolf_winner
 
